@@ -1,0 +1,13 @@
+[package]
+name = "cosmic-monitor"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+
+[dependencies.libcosmic]
+git = "https://github.com/pop-os/libcosmic.git"
+features = ["a11y", "tokio", "winit"]
+
+[dependencies.sysinfo]
+version = "0.32.0"

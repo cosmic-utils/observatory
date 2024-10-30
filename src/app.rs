@@ -4,6 +4,7 @@ mod processes;
 mod resources;
 
 pub use cosmic::app::{Command, Core, Settings};
+use cosmic::iced::time::every;
 pub use cosmic::iced_core::Size;
 pub use cosmic::widget::nav_bar;
 pub use cosmic::{executor, iced, ApplicationExt, Element};
@@ -31,7 +32,9 @@ impl Page {
 pub struct App {
     core: Core,
     nav_model: nav_bar::Model,
+
     sys: sysinfo::System,
+    process_page: processes::ProcessPage,
 }
 
 /// Implement [`cosmic::Application`] to integrate with COSMIC.
@@ -56,6 +59,11 @@ impl cosmic::Application for App {
         &mut self.core
     }
 
+    fn subscription(&self) -> cosmic::iced::Subscription<Message> {
+        cosmic::iced::time::every(cosmic::iced::time::Duration::from_secs(1))
+            .map(|_| Message::Refresh)
+    }
+
     /// Creates the application, and optionally emits command on initialize.
     fn init(core: Core, input: Self::Flags) -> (Self, Command<Self::Message>) {
         let mut nav_model = nav_bar::Model::default();
@@ -67,15 +75,16 @@ impl cosmic::Application for App {
         nav_model.activate_position(0);
 
         let sys = sysinfo::System::new_all();
+        let process_page = processes::ProcessPage::new();
 
         let mut app = App {
             core,
             nav_model,
             sys,
+            process_page,
         };
 
         let command = app.update_title();
-
         (app, command)
     }
 
@@ -109,11 +118,11 @@ impl cosmic::Application for App {
                 Page::Resources => {
                     Element::from(cosmic::widget::container(resources::resources(&self.sys)))
                 }
-                Page::Processes => {
-                    Element::from(cosmic::widget::container(processes::processes(&self.sys)))
-                }
+                Page::Processes => Element::from(cosmic::widget::container(
+                    self.process_page.processes(&self.sys),
+                )),
             },
-            None => Element::from(cosmic::widget::text("N/A")),
+            _ => Element::from(cosmic::widget::text("N/A")),
         }
     }
 }

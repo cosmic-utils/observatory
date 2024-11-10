@@ -1,15 +1,285 @@
 use crate::app::message::Message;
+use crate::app::cosmic_theming;
 
+use cosmic::iced::Alignment;
+use cosmic::widget::horizontal_space;
 use cosmic::{
+    iced::Length,
     iced_widget::{horizontal_rule, row, scrollable},
-    widget::{container, icon, text, text::heading},
+    widget,
+    widget::{button, container, icon, text},
     Element,
 };
-use sysinfo::Users;
+use cosmic::iced::alignment::Horizontal;
+
+#[derive(Clone, Debug)]
+pub struct Process {
+    name: String,
+    user: String,
+    cpu: String,
+    mem: String,
+    disk: String,
+    pid: sysinfo::Pid,
+}
+
+pub struct ProcessPage {
+    sort_data: (HeaderCategory, SortDirection),
+    users: sysinfo::Users,
+    active_uid: sysinfo::Uid,
+
+    processes: Vec<Process>,
+
+    active_process: Option<sysinfo::Pid>,
+}
+
+impl ProcessPage {
+    pub fn new(sys: &sysinfo::System) -> ProcessPage {
+        ProcessPage {
+            processes: vec![],
+            sort_data: (HeaderCategory::Name, SortDirection::Descending),
+            users: sysinfo::Users::new_with_refreshed_list(),
+            active_uid: sys
+                .processes()
+                .values()
+                .find(|process| process.name() == "cosmic-monitor")
+                .unwrap()
+                .user_id()
+                .unwrap()
+                .clone(),
+            active_process: None,
+        }
+    }
+
+    pub fn update(&mut self, sys: &sysinfo::System, message: Message) {
+        match message {
+            Message::ProcessTermActive => {
+                sys.process(self.active_process.unwrap())
+                    .unwrap()
+                    .kill_with(sysinfo::Signal::Term)
+                    .unwrap();
+            }
+            Message::ProcessKillActive => {
+                sys.process(self.active_process.unwrap()).unwrap().kill();
+            }
+            Message::ProcessClick(pid) => {
+                self.active_process = pid
+            }
+            Message::Refresh => {
+                self.update_processes(sys);
+            }
+        };
+    }
+
+    pub fn view(&self) -> Element<Message> {
+        let theme = cosmic::theme::active();
+        let cosmic = theme.cosmic();
+
+        // The vertical column of process elements
+        let mut main_column = cosmic::widget::column::<Message>();
+
+        // Header row
+        main_column = main_column
+            .push(self.create_header_row(&theme))
+            .push(container(horizontal_rule(1)).padding([cosmic.space_xxs(), 0]));
+
+        // Push process rows into scrollable widget
+        let mut process_group = widget::column().spacing(cosmic.space_xxxs()).padding([0, cosmic.space_xxs(), 0, 0]);
+        for process in &self.processes {
+            process_group = process_group.push(self.create_process_row(&theme, &process));
+        }
+        let process_group_scroll = scrollable(
+            widget::mouse_area(process_group).on_press(Message::ProcessClick(None)),
+        ).width(Length::Fill);
+
+        main_column.push(process_group_scroll).into()
+    }
+
+    pub fn footer(&self) -> Option<Element<Message>> {
+        if self.active_process.is_some() {
+            let theme = cosmic::theme::active();
+            let cosmic = theme.cosmic();
+
+            let mut row = widget::row::with_capacity(2)
+                .align_y(Alignment::Center)
+                .spacing(cosmic.space_xxs());
+            row = row.push(horizontal_space());
+            row = row.push(container(
+                button::standard("Kill").on_press(Message::ProcessTermActive),
+            ));
+            row = row.push(container(
+                button::suggested("Terminate").on_press(Message::ProcessTermActive),
+            ));
+            Some(
+                widget::layer_container(container(row))
+                    .layer(cosmic::cosmic_theme::Layer::Primary)
+                    .padding([cosmic.space_xxs(), cosmic.space_xs()])
+                    .into(),
+            )
+        } else {
+            None
+        }
+    }
+
+    pub fn update_processes(&mut self, sys: &sysinfo::System) {
+        self.processes = sys
+            .processes()
+            .values()
+            .filter(|process| process.thread_kind().is_none() && process.user_id() == Some(&self.active_uid))
+            .map(|process| Process {
+                name: if let Some(path) = process.exe() {
+                    path.file_name().unwrap().to_str().unwrap().into()
+                } else {
+                    process.name().to_str().unwrap().into()
+                },
+                user: self
+                    .users
+                    .get_user_by_id(process.user_id().unwrap())
+                    .unwrap()
+                    .name()
+                    .into(),
+                cpu: format!("{:.1}%", process.cpu_usage() / sys.cpus().len() as f32),
+                mem: {
+                    let bytes = process.memory();
+                    let kibibytes = bytes as f64 / 1024.;
+                    let mebibytes = kibibytes / 1024.;
+                    let gibibytes = mebibytes / 1024.;
+                    if bytes < 1024 {
+                        format!("{} B", bytes)
+                    } else if kibibytes < 1024. {
+                        format!("{:.2} KiB", kibibytes)
+                    } else if mebibytes < 1024. {
+                        format!("{:.2} MiB", mebibytes)
+                    } else {
+                        format!("{:.2} GiB", gibibytes)
+                    }
+                },
+                disk: {
+                    let bytes =
+                        process.disk_usage().read_bytes + process.disk_usage().written_bytes;
+                    let kibibytes = bytes as f64 / 1024.;
+                    let mebibytes = kibibytes / 1024.;
+                    let gibibytes = mebibytes / 1024.;
+                    if bytes < 1024 {
+                        format!("{} B/s", bytes)
+                    } else if kibibytes < 1024. {
+                        format!("{:.2} KiB/s", kibibytes)
+                    } else if mebibytes < 1024. {
+                        format!("{:.2} MiB/s", mebibytes)
+                    } else {
+                        format!("{:.2} GiB/s", gibibytes)
+                    }
+                },
+                pid: process.pid(),
+            })
+            .collect();
+
+        self.sort_processes();
+    }
+
+    fn sort_processes(&mut self) {
+        self.processes.sort_by(|a, b| match self.sort_data {
+            (HeaderCategory::Name, SortDirection::Descending) => a
+                .name
+                .to_ascii_lowercase()
+                .cmp(&b.name.to_ascii_lowercase()),
+            (HeaderCategory::Name, SortDirection::_Ascending) => b
+                .name
+                .to_ascii_lowercase()
+                .cmp(&a.name.to_ascii_lowercase()),
+            _ => std::cmp::Ordering::Less,
+        })
+    }
+
+    fn create_header_row(&self, theme: &cosmic::theme::Theme) -> Element<Message> {
+        let cosmic = theme.cosmic();
+        let mut row = widget::row::with_capacity::<Message>(5)
+            .spacing(cosmic.space_xxxs())
+            .padding([0, cosmic.space_xxs()]);
+
+        let sort_arrow = |category: HeaderCategory| -> widget::Container<Message, cosmic::theme::Theme> {
+            if self.sort_data.0 == category {
+                if self.sort_data.1 == SortDirection::Descending {
+                    container(icon::from_name("pan-down-symbolic"))
+                } else {
+                    container(icon::from_name("pan-up-symbolic"))
+                }
+            } else {
+                container(text::body(""))
+            }
+        };
+
+        row = row.push(
+            container(row![text::heading("Name"), sort_arrow(HeaderCategory::Name)].spacing(cosmic.space_xxxs()))
+                .width(HeaderCategory::width(&HeaderCategory::Name))
+        );
+        row = row.push(
+            container(row![text::heading("User"), sort_arrow(HeaderCategory::User)].spacing(cosmic.space_xxxs()))
+                .width(HeaderCategory::width(&HeaderCategory::User))
+        );
+        row = row.push(
+            container(row![text::heading("CPU"), sort_arrow(HeaderCategory::Cpu)].spacing(cosmic.space_xxxs()))
+                .width(HeaderCategory::width(&HeaderCategory::Cpu))
+                .align_x(Horizontal::Right)
+        );
+        row = row.push(
+            container(row![text::heading("Memory"), sort_arrow(HeaderCategory::Memory)].spacing(cosmic.space_xxxs()))
+                .width(HeaderCategory::width(&HeaderCategory::Memory))
+                .align_x(Horizontal::Right)
+        );
+        row = row.push(
+            container(row![text::heading("Disk"), sort_arrow(HeaderCategory::Disk)].spacing(cosmic.space_xxxs()))
+                .width(HeaderCategory::width(&HeaderCategory::Disk))
+                .align_x(Horizontal::Right)
+        );
+
+        Element::new(row)
+    }
+
+    fn create_process_row<'a>(&'a self, theme: &cosmic::Theme, process: &'a Process) -> Element<'a, Message> {
+        let cosmic = theme.cosmic();
+        let mut row = widget::row::with_capacity::<Message>(5)
+            .spacing(cosmic.space_xxxs())
+            .padding([0, cosmic.space_xxs()]);
+
+        row = row.push(
+            widget::container(text::body(&process.name))
+                .width(HeaderCategory::width(&HeaderCategory::Name)));
+        row = row.push(
+            widget::container(text::body(&process.user))
+                .width(HeaderCategory::width(&HeaderCategory::User)));
+        row = row.push(
+            widget::container(text::body(&process.cpu))
+                .align_x(Horizontal::Right)
+                .width(HeaderCategory::width(&HeaderCategory::Cpu)));
+        row = row.push(
+            widget::container(text::body(&process.mem))
+                .align_x(Horizontal::Right)
+                .width(HeaderCategory::width(&HeaderCategory::Memory)));
+        row = row.push(
+            widget::container(text::body(&process.disk))
+                .align_x(Horizontal::Right)
+                .width(HeaderCategory::width(&HeaderCategory::Disk)));
+
+
+        button::custom(row)
+            .padding([cosmic.space_xxxs(), 0])
+            .width(Length::Fill)
+            .class(cosmic_theming::button_style(
+                match self.active_process {
+                    Some(active_process) => active_process == process.pid,
+                    _ => false
+                },
+                true,
+            ))
+            .on_press(Message::ProcessClick(Some(process.pid)))
+            .width(Length::Shrink)
+            .into()
+    }
+}
 
 #[derive(PartialEq)]
 enum SortDirection {
-    Ascending,
+    _Ascending,
     Descending,
 }
 
@@ -23,206 +293,14 @@ enum HeaderCategory {
 }
 
 impl HeaderCategory {
-    fn name(cat: &HeaderCategory) -> &str {
-        match cat {
-            HeaderCategory::Name => "Name",
-            HeaderCategory::User => "User",
-            HeaderCategory::Cpu => "CPU",
-            HeaderCategory::Memory => "Memory",
-            HeaderCategory::Disk => "Disk",
-        }
-    }
-
     // (300, 100, 75, 100, 150);
-    fn width(cat: &HeaderCategory) -> u16 {
+    fn width(cat: &HeaderCategory) -> Length {
         match cat {
-            HeaderCategory::Name => 250,
-            HeaderCategory::User => 150,
-            HeaderCategory::Cpu => 75,
-            HeaderCategory::Memory => 100,
-            HeaderCategory::Disk => 150,
+            HeaderCategory::Name => 300.into(),
+            HeaderCategory::User => 80.into(),
+            HeaderCategory::Cpu => 60.into(),
+            HeaderCategory::Memory => 80.into(),
+            HeaderCategory::Disk => 100.into(),
         }
     }
-}
-
-pub struct ProcessPage {
-    sort_data: (HeaderCategory, SortDirection),
-}
-
-impl ProcessPage {
-    pub fn new() -> ProcessPage {
-        ProcessPage {
-            sort_data: (HeaderCategory::Name, SortDirection::Descending),
-        }
-    }
-
-    pub fn processes<'a>(&'a self, sys: &'a sysinfo::System) -> Element<'a, Message> {
-        let cosmic::cosmic_theme::Spacing { space_xxs, .. } =
-            cosmic::theme::active().cosmic().spacing;
-
-        // The vertical column of process elements
-        let mut main_column = cosmic::widget::column::<Message>();
-        // The different widths of elements
-
-        // Label row
-        main_column = main_column
-            .push(container(row![
-                create_header_label(&HeaderCategory::Name, &self.sort_data),
-                create_header_label(&HeaderCategory::User, &self.sort_data),
-                create_header_label(&HeaderCategory::Cpu, &self.sort_data),
-                create_header_label(&HeaderCategory::Memory, &self.sort_data),
-                create_header_label(&HeaderCategory::Disk, &self.sort_data),
-            ]))
-            .push(container(horizontal_rule(1)).padding([0, space_xxs]));
-
-        let mut processes = sys
-            .processes()
-            .values()
-            .filter(|process| match process.thread_kind() {
-                None => true,
-                _ => false,
-            })
-            .collect::<Vec<&sysinfo::Process>>();
-
-        processes.sort_by(|a, b| match self.sort_data.0 {
-            _ => {
-                let name_a = get_process_name(a);
-
-                let name_b = get_process_name(b);
-
-                if self.sort_data.1 == SortDirection::Descending {
-                    name_a.to_lowercase().cmp(&name_b.to_lowercase())
-                } else {
-                    name_b.to_lowercase().cmp(&name_a.to_lowercase())
-                }
-            }
-        });
-
-        let mut process_group = cosmic::widget::column::<Message>();
-        for process in processes {
-            process_group = process_group.push(create_process_row(process, sys));
-        }
-
-        main_column.push(scrollable(process_group)).into()
-    }
-}
-
-fn get_process_name(process: &sysinfo::Process) -> String {
-    if let Some(path) = process.exe() {
-        path.file_name().unwrap().to_str().unwrap().into()
-    } else {
-        process.name().to_str().unwrap().into()
-    }
-}
-
-fn get_process_user(process: &sysinfo::Process, users: &Users) -> String {
-    users
-        .get_user_by_id(process.user_id().unwrap())
-        .unwrap()
-        .name()
-        .into()
-}
-
-fn get_process_cpu(process: &sysinfo::Process, num_cpus: usize) -> String {
-    format!("{:.2}%", process.cpu_usage() / num_cpus as f32).into()
-}
-
-fn get_process_memory(process: &sysinfo::Process) -> String {
-    let bytes = process.memory();
-    let kibibytes = bytes as f64 / 1024.;
-    let mebibytes = kibibytes / 1024.;
-    let gibibytes = mebibytes / 1024.;
-    if bytes < 1024 {
-        format!("{} B", bytes)
-    } else if kibibytes < 1024. {
-        format!("{:.2} KiB", kibibytes)
-    } else if mebibytes < 1024. {
-        format!("{:.2} MiB", mebibytes)
-    } else {
-        format!("{:.2} GiB", gibibytes)
-    }
-}
-
-fn get_process_disk(process: &sysinfo::Process) -> String {
-    let bytes = process.disk_usage().read_bytes + process.disk_usage().written_bytes;
-    let kibibytes = bytes as f64 / 1024.;
-    let mebibytes = kibibytes / 1024.;
-    let gibibytes = mebibytes / 1024.;
-    if bytes < 1024 {
-        format!("{} B/s", bytes)
-    } else if kibibytes < 1024. {
-        format!("{:.2} KiB/s", kibibytes)
-    } else if mebibytes < 1024. {
-        format!("{:.2} MiB/s", mebibytes)
-    } else {
-        format!("{:.2} GiB/s", gibibytes)
-    }
-}
-
-fn create_header_label<'a>(
-    category: &'a HeaderCategory,
-    sort_data: &'a (HeaderCategory, SortDirection),
-) -> Element<'a, Message> {
-    let title_text = container(heading(HeaderCategory::name(&category)))
-        .padding([0, cosmic::theme::active().cosmic().spacing.space_xs]);
-    let arrow: Element<Message> = if category == &sort_data.0 {
-        match sort_data {
-            (_, SortDirection::Ascending) => container(icon::from_name("pan-up-symbolic"))
-                .padding([0, cosmic::theme::active().cosmic().spacing.space_xxxs])
-                .into(),
-            (_, SortDirection::Descending) => container(icon::from_name("pan-down-symbolic"))
-                .padding([0, cosmic::theme::active().cosmic().spacing.space_xxxs])
-                .into(),
-        }
-    } else {
-        text("").into()
-    };
-
-    let width = HeaderCategory::width(&category);
-
-    container(row![title_text, arrow])
-        .width(width)
-        .padding([cosmic::theme::active().cosmic().spacing.space_xxs, 0])
-        .into()
-}
-
-fn create_process_row<'a>(
-    process: &'a sysinfo::Process,
-    sys: &'a sysinfo::System,
-) -> Element<'a, Message> {
-    let users = Users::new_with_refreshed_list();
-    let padding = [0, cosmic::theme::active().cosmic().spacing.space_xxs];
-
-    let process_name: Element<'a, Message> = container(text(get_process_name(process)))
-        .width(HeaderCategory::width(&HeaderCategory::Name))
-        .padding(padding)
-        .into();
-    let process_user: Element<'a, Message> = container(text(get_process_user(process, &users)))
-        .width(HeaderCategory::width(&HeaderCategory::User))
-        .padding(padding)
-        .into();
-    let process_cpu: Element<'a, Message> =
-        container(text(get_process_cpu(process, sys.cpus().len())))
-            .width(HeaderCategory::width(&HeaderCategory::Cpu))
-            .padding(padding)
-            .into();
-    let process_mem: Element<'a, Message> = container(text(get_process_memory(process)))
-        .width(HeaderCategory::width(&HeaderCategory::Memory))
-        .padding(padding)
-        .into();
-    let process_disk: Element<'a, Message> = container(text(get_process_disk(process)))
-        .width(HeaderCategory::width(&HeaderCategory::Disk))
-        .padding(padding)
-        .into();
-
-    let process_row = row![
-        process_name,
-        process_user,
-        process_cpu,
-        process_mem,
-        process_disk
-    ];
-    container(process_row)
-        .padding([cosmic::theme::active().cosmic().spacing.space_xxs, 0])
-        .into()
 }

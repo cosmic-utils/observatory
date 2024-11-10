@@ -2,11 +2,13 @@ pub mod message;
 mod overview;
 mod processes;
 mod resources;
+pub mod cosmic_theming;
 
-pub use cosmic::app::{Command, Core, Settings};
-use cosmic::iced::time::every;
+pub use cosmic::app::{Core, Settings, Task};
 pub use cosmic::iced_core::Size;
+use cosmic::widget::container;
 pub use cosmic::widget::nav_bar;
+use cosmic::widget::text;
 pub use cosmic::{executor, iced, ApplicationExt, Element};
 
 use message::Message;
@@ -65,7 +67,7 @@ impl cosmic::Application for App {
     }
 
     /// Creates the application, and optionally emits command on initialize.
-    fn init(core: Core, input: Self::Flags) -> (Self, Command<Self::Message>) {
+    fn init(core: Core, input: Self::Flags) -> (Self, Task<Self::Message>) {
         let mut nav_model = nav_bar::Model::default();
 
         for title in input {
@@ -74,8 +76,13 @@ impl cosmic::Application for App {
 
         nav_model.activate_position(0);
 
-        let sys = sysinfo::System::new_all();
-        let process_page = processes::ProcessPage::new();
+        let mut sys = sysinfo::System::new_all();
+        sys.refresh_all();
+        std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
+        sys.refresh_all();
+
+        let mut process_page = processes::ProcessPage::new(&sys);
+        process_page.update_processes(&sys);
 
         let mut app = App {
             core,
@@ -94,35 +101,48 @@ impl cosmic::Application for App {
     }
 
     /// Called when a navigation item is selected.
-    fn on_nav_select(&mut self, id: nav_bar::Id) -> Command<Self::Message> {
+    fn on_nav_select(&mut self, id: nav_bar::Id) -> Task<Self::Message> {
         self.nav_model.activate(id);
         self.update_title()
     }
 
     /// Handle application events here.
-    fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
+    fn update(&mut self, message: Self::Message) -> Task<Self::Message> {
         if message == Message::Refresh {
             self.sys.refresh_all();
         }
 
-        Command::none()
+        if let Some(&page) = self.nav_model.active_data::<Page>() {
+            match page {
+                Page::Processes => {
+                    self.process_page.update(&self.sys, message);
+                }
+                _ => {}
+            }
+        };
+
+        Task::none()
     }
 
     /// Creates a view after each update.
     fn view(&self) -> Element<Self::Message> {
         match self.nav_model.active_data::<Page>() {
             Some(&page) => match page {
-                Page::Overview => {
-                    Element::from(cosmic::widget::container(overview::overview(&self.sys)))
-                }
-                Page::Resources => {
-                    Element::from(cosmic::widget::container(resources::resources(&self.sys)))
-                }
-                Page::Processes => Element::from(cosmic::widget::container(
-                    self.process_page.processes(&self.sys),
-                )),
+                Page::Overview => container(overview::overview(&self.sys)).into(),
+                Page::Resources => container(resources::resources(&self.sys)).into(),
+                Page::Processes => container(self.process_page.view()).into(),
             },
-            _ => Element::from(cosmic::widget::text("N/A")),
+            _ => text::body("N/A").into(),
+        }
+    }
+
+    fn footer(&self) -> Option<Element<Self::Message>> {
+        match self.nav_model.active_data::<Page>() {
+            Some(&page) => match page {
+                Page::Processes => self.process_page.footer(),
+                _ => None,
+            },
+            _ => None,
         }
     }
 }
@@ -137,10 +157,10 @@ where
             .unwrap_or("Unknown Page")
     }
 
-    fn update_title(&mut self) -> Command<Message> {
+    fn update_title(&mut self) -> Task<Message> {
         let header_title = self.active_page_title().to_owned();
         let window_title = format!("{header_title} — COSMIC AppDemo");
         self.set_header_title(header_title);
-        self.set_window_title(window_title)
+        self.set_window_title(window_title, self.core.main_window_id().unwrap())
     }
 }

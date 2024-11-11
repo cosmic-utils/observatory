@@ -1,18 +1,21 @@
+use std::cmp::Ordering;
+use std::collections::HashMap;
 use freedesktop_entry_parser::parse_entry;
 
+#[derive(Debug, Clone)]
 pub struct Application {
-    name: String,
+    _name: String,
     cmd: String,
     icon: String,
 }
 
 impl Application {
-    pub fn name(&self) -> &str { &self.name }
+    pub fn _name(&self) -> &str { &self._name }
     pub fn cmd(&self) -> &str { &self.cmd }
     pub fn icon(&self) -> &str { &self.icon }
 
     pub fn scan_all() -> Vec<Application> {
-        let mut apps: Vec<Application> = Vec::new();
+        let mut apps: HashMap<String, Application> = HashMap::new();
         let files = std::fs::read_dir("/usr/share/applications").expect("Unable to read /usr/share/applications!");
         for file in files {
             let file = file.unwrap();
@@ -23,6 +26,13 @@ impl Application {
                 name.to_string()
             } else {
                 path.file_name().unwrap().to_str().unwrap().to_string()
+            };
+
+            // Used for clearing multiple cmd situations
+            let full_cmd = if let Some(cmd) = desktop_entry.section("Desktop Entry").attr("Exec") {
+                cmd.to_string()
+            } else {
+                "".to_string()
             };
 
             let cmd = if let Some(cmd) = desktop_entry.section("Desktop Entry").attr("Exec") {
@@ -37,13 +47,11 @@ impl Application {
                 "application-default-symbolic".to_string()
             };
 
-            apps.push(Application {
-                name,
-                cmd,
-                icon,
-            });
+            if full_cmd.cmp(&cmd) == Ordering::Equal || !apps.contains_key(&cmd) {
+                apps.insert(cmd.clone(), Application { _name: name, cmd, icon });
+            }
         }
 
-        apps
+        apps.values().cloned().collect()
     }
 }

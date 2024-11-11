@@ -9,6 +9,7 @@ pub mod applications;
 pub use cosmic::app::{Core, Task};
 use cosmic::widget;
 pub use cosmic::{executor, ApplicationExt, Element};
+use cosmic::iced::keyboard::{Key, Modifiers};
 use sysinfo::{ProcessRefreshKind, ProcessesToUpdate};
 use message::Message;
 
@@ -84,7 +85,7 @@ impl cosmic::Application for App {
     fn footer(&self) -> Option<Element<Self::Message>> {
         match self.nav_model.active_data::<Page>() {
             Some(&page) => match page {
-                Page::Processes => Some(self.process_page.footer()),
+                Page::Processes => self.process_page.footer(),
                 _ => None,
             },
             _ => None,
@@ -103,8 +104,11 @@ impl cosmic::Application for App {
     }
 
     fn subscription(&self) -> cosmic::iced::Subscription<Message> {
-        cosmic::iced::time::every(cosmic::iced::time::Duration::from_secs(1))
-            .map(|_| Message::Refresh)
+        let update_clock = cosmic::iced::time::every(cosmic::iced::time::Duration::from_secs(1))
+            .map(|_| Message::Refresh);
+        let key_press = cosmic::iced_winit::graphics::futures::keyboard::on_key_press(key_to_message);
+
+        cosmic::iced::Subscription::batch([update_clock, key_press])
     }
 
     /// Handle application events here.
@@ -113,6 +117,10 @@ impl cosmic::Application for App {
             self.sys.refresh_cpu_all();
             self.sys.refresh_memory();
             self.sys.refresh_processes_specifics(ProcessesToUpdate::All, true, ProcessRefreshKind::everything());
+        }
+
+        if message == Message::KeyPressed(Key::Named(cosmic::iced::keyboard::key::Named::Escape)) {
+            self.core.set_show_context(false);
         }
 
         if let Some(&page) = self.nav_model.active_data::<Page>() {
@@ -133,7 +141,7 @@ impl cosmic::Application for App {
             Some(&page) => match page {
                 Page::Overview => widget::container(overview::overview(&self.sys)).into(),
                 Page::Resources => widget::container(resources::resources(&self.sys)).into(),
-                Page::Processes => widget::container(self.process_page.view(&self.apps)).into(),
+                Page::Processes => widget::container(self.process_page.view()).into(),
             },
             _ => widget::text::body("").into(),
         }
@@ -156,4 +164,8 @@ where
         self.set_header_title(header_title);
         self.set_window_title(window_title, self.core.main_window_id().unwrap())
     }
+}
+
+fn key_to_message(key: Key, _: Modifiers) -> Option<Message> {
+    Some(Message::KeyPressed(key))
 }

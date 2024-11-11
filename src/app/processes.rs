@@ -29,7 +29,7 @@ pub struct ProcessPage {
 
     processes: Vec<Process>,
 
-    active_process: Option<sysinfo::Pid>,
+    selected_process: Option<sysinfo::Pid>,
 }
 
 impl ProcessPage {
@@ -46,23 +46,23 @@ impl ProcessPage {
                 .user_id()
                 .unwrap()
                 .clone(),
-            active_process: None,
+            selected_process: None,
         }
     }
 
     pub fn update(&mut self, sys: &sysinfo::System, message: Message) {
         match message {
             Message::ProcessTermActive => {
-                sys.process(self.active_process.unwrap())
+                sys.process(self.selected_process.unwrap())
                     .unwrap()
                     .kill_with(sysinfo::Signal::Term)
                     .unwrap();
             }
             Message::ProcessKillActive => {
-                sys.process(self.active_process.unwrap()).unwrap().kill();
+                sys.process(self.selected_process.unwrap()).unwrap().kill();
             }
             Message::ProcessClick(pid) => {
-                self.active_process = pid
+                self.selected_process = pid
             }
             Message::Refresh => {
                 self.update_processes(sys);
@@ -75,7 +75,7 @@ impl ProcessPage {
         let cosmic = theme.cosmic();
 
         // The vertical column of process elements
-        let mut main_column = cosmic::widget::column::<Message>();
+        let mut main_column = cosmic::widget::column::<Message>().height(Length::Fill);
 
         // Header row
         main_column = main_column
@@ -94,8 +94,9 @@ impl ProcessPage {
         main_column.push(process_group_scroll).into()
     }
 
-    pub fn footer(&self) -> Option<Element<Message>> {
-        if self.active_process.is_some() {
+    pub fn footer(&self) -> Element<Message> {
+        if self.selected_process.is_some() {
+            let mut col = widget::column::with_capacity::<Message>(1);
             let theme = cosmic::theme::active();
             let cosmic = theme.cosmic();
 
@@ -104,20 +105,38 @@ impl ProcessPage {
                 .spacing(cosmic.space_xxs());
             row = row.push(horizontal_space());
             row = row.push(container(
-                button::standard("Kill").on_press(Message::ProcessTermActive),
+                button::standard("Kill").on_press(Message::ProcessKillActive),
             ));
             row = row.push(container(
                 button::suggested("Terminate").on_press(Message::ProcessTermActive),
             ));
-            Some(
-                widget::layer_container(container(row))
-                    .layer(cosmic::cosmic_theme::Layer::Primary)
-                    .padding([cosmic.space_xxs(), cosmic.space_xs()])
-                    .into(),
-            )
+
+            col = col.push(row);
+
+            widget::layer_container(col)
+                .layer(cosmic::cosmic_theme::Layer::Primary)
+                .padding([cosmic.space_xxs(), cosmic.space_xs()])
+                .into()
         } else {
-            None
+            widget::row().into()
         }
+    }
+
+    fn get_process_name(process: &sysinfo::Process) -> String {
+        // Check if the cmd file name starts with process.name()
+        let name = process.name().to_str().unwrap();
+        let cmd = if process.cmd().len() > 0 { process.cmd()[0].to_str() } else { None };
+
+        if let Some(cmd) = cmd {
+            let file_name = std::path::Path::new(cmd).file_name();
+            if let Some(file_name) = file_name {
+                // Now that we've established the cmd, let's check that name starts with it!
+                if file_name.to_str().unwrap().starts_with(name) {
+                    return file_name.to_str().unwrap().to_owned();
+                }
+            }
+        }
+        name.into()
     }
 
     pub fn update_processes(&mut self, sys: &sysinfo::System) {
@@ -126,11 +145,7 @@ impl ProcessPage {
             .values()
             .filter(|process| process.thread_kind().is_none() && process.user_id() == Some(&self.active_uid))
             .map(|process| Process {
-                name: if let Some(path) = process.exe() {
-                    path.file_name().unwrap().to_str().unwrap().into()
-                } else {
-                    process.name().to_str().unwrap().into()
-                },
+                name: Self::get_process_name(process),
                 user: self
                     .users
                     .get_user_by_id(process.user_id().unwrap())
@@ -265,7 +280,7 @@ impl ProcessPage {
             .padding([cosmic.space_xxxs(), 0])
             .width(Length::Fill)
             .class(cosmic_theming::button_style(
-                match self.active_process {
+                match self.selected_process {
                     Some(active_process) => active_process == process.pid,
                     _ => false
                 },

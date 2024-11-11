@@ -1,16 +1,16 @@
 pub mod message;
+pub mod cosmic_theming;
+pub mod flags;
 mod overview;
 mod processes;
 mod resources;
-pub mod cosmic_theming;
 
-pub use cosmic::app::{Core, Settings, Task};
-pub use cosmic::iced_core::Size;
-use cosmic::widget::container;
+pub use cosmic::app::{Core, Task};
+use cosmic::widget::{container};
 pub use cosmic::widget::nav_bar;
 use cosmic::widget::text;
-pub use cosmic::{executor, iced, ApplicationExt, Element};
-
+pub use cosmic::{executor, ApplicationExt, Element};
+use sysinfo::{ProcessRefreshKind, ProcessesToUpdate};
 use message::Message;
 
 #[derive(Clone, Copy)]
@@ -18,16 +18,6 @@ pub enum Page {
     Overview,
     Resources,
     Processes,
-}
-
-impl Page {
-    const fn as_str(self) -> &'static str {
-        match self {
-            Page::Overview => "Overview",
-            Page::Resources => "Resources",
-            Page::Processes => "Processes",
-        }
-    }
 }
 
 /// The [`App`] stores application-specific state.
@@ -45,7 +35,7 @@ impl cosmic::Application for App {
     type Executor = executor::Default;
 
     /// Argument received [`cosmic::Application::new`].
-    type Flags = Vec<Page>;
+    type Flags = flags::Flags;
 
     /// Message type specific to our [`App`].
     type Message = Message;
@@ -61,25 +51,19 @@ impl cosmic::Application for App {
         &mut self.core
     }
 
-    fn subscription(&self) -> cosmic::iced::Subscription<Message> {
-        cosmic::iced::time::every(cosmic::iced::time::Duration::from_secs(1))
-            .map(|_| Message::Refresh)
-    }
-
     /// Creates the application, and optionally emits command on initialize.
-    fn init(core: Core, input: Self::Flags) -> (Self, Task<Self::Message>) {
+    fn init(core: Core, _input: Self::Flags) -> (Self, Task<Self::Message>) {
         let mut nav_model = nav_bar::Model::default();
 
-        for title in input {
-            nav_model.insert().text(title.as_str()).data(title);
-        }
+        nav_model.insert().text("Overview").data(Page::Overview);
+        nav_model.insert().text("Resources").data(Page::Resources);
+        nav_model.insert().text("Processes").data(Page::Processes);
 
-        nav_model.activate_position(0);
+        nav_model.activate_position(2);
 
         let mut sys = sysinfo::System::new_all();
-        sys.refresh_all();
         std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
-        sys.refresh_all();
+        sys.refresh_processes_specifics(ProcessesToUpdate::All, true, ProcessRefreshKind::everything());
 
         let mut process_page = processes::ProcessPage::new(&sys);
         process_page.update_processes(&sys);
@@ -95,6 +79,16 @@ impl cosmic::Application for App {
         (app, command)
     }
 
+    fn footer(&self) -> Option<Element<Self::Message>> {
+        match self.nav_model.active_data::<Page>() {
+            Some(&page) => match page {
+                Page::Processes => Some(self.process_page.footer()),
+                _ => None,
+            },
+            _ => None,
+        }
+    }
+
     /// Allows COSMIC to integrate with your application's [`nav_bar::Model`].
     fn nav_model(&self) -> Option<&nav_bar::Model> {
         Some(&self.nav_model)
@@ -106,10 +100,17 @@ impl cosmic::Application for App {
         self.update_title()
     }
 
+    fn subscription(&self) -> cosmic::iced::Subscription<Message> {
+        cosmic::iced::time::every(cosmic::iced::time::Duration::from_secs(1))
+            .map(|_| Message::Refresh)
+    }
+
     /// Handle application events here.
     fn update(&mut self, message: Self::Message) -> Task<Self::Message> {
         if message == Message::Refresh {
-            self.sys.refresh_all();
+            self.sys.refresh_cpu_all();
+            self.sys.refresh_memory();
+            self.sys.refresh_processes_specifics(ProcessesToUpdate::All, true, ProcessRefreshKind::everything());
         }
 
         if let Some(&page) = self.nav_model.active_data::<Page>() {
@@ -133,16 +134,6 @@ impl cosmic::Application for App {
                 Page::Processes => container(self.process_page.view()).into(),
             },
             _ => text::body("N/A").into(),
-        }
-    }
-
-    fn footer(&self) -> Option<Element<Self::Message>> {
-        match self.nav_model.active_data::<Page>() {
-            Some(&page) => match page {
-                Page::Processes => self.process_page.footer(),
-                _ => None,
-            },
-            _ => None,
         }
     }
 }

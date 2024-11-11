@@ -4,11 +4,10 @@ pub mod flags;
 mod overview;
 mod processes;
 mod resources;
+pub mod applications;
 
 pub use cosmic::app::{Core, Task};
-use cosmic::widget::{container};
-pub use cosmic::widget::nav_bar;
-use cosmic::widget::text;
+use cosmic::widget;
 pub use cosmic::{executor, ApplicationExt, Element};
 use sysinfo::{ProcessRefreshKind, ProcessesToUpdate};
 use message::Message;
@@ -23,7 +22,9 @@ pub enum Page {
 /// The [`App`] stores application-specific state.
 pub struct App {
     core: Core,
-    nav_model: nav_bar::Model,
+    nav_model: widget::nav_bar::Model,
+
+    apps: Vec<applications::Application>,
 
     sys: sysinfo::System,
     process_page: processes::ProcessPage,
@@ -53,24 +54,25 @@ impl cosmic::Application for App {
 
     /// Creates the application, and optionally emits command on initialize.
     fn init(core: Core, _input: Self::Flags) -> (Self, Task<Self::Message>) {
-        let mut nav_model = nav_bar::Model::default();
-
+        let mut nav_model = widget::nav_bar::Model::default();
         nav_model.insert().text("Overview").data(Page::Overview);
         nav_model.insert().text("Resources").data(Page::Resources);
         nav_model.insert().text("Processes").data(Page::Processes);
-
         nav_model.activate_position(2);
+
+        let apps = applications::Application::scan_all();
 
         let mut sys = sysinfo::System::new_all();
         std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
         sys.refresh_processes_specifics(ProcessesToUpdate::All, true, ProcessRefreshKind::everything());
 
         let mut process_page = processes::ProcessPage::new(&sys);
-        process_page.update_processes(&sys);
+        process_page.update_processes(&sys, &apps);
 
         let mut app = App {
             core,
             nav_model,
+            apps,
             sys,
             process_page,
         };
@@ -90,12 +92,12 @@ impl cosmic::Application for App {
     }
 
     /// Allows COSMIC to integrate with your application's [`nav_bar::Model`].
-    fn nav_model(&self) -> Option<&nav_bar::Model> {
+    fn nav_model(&self) -> Option<&widget::nav_bar::Model> {
         Some(&self.nav_model)
     }
 
     /// Called when a navigation item is selected.
-    fn on_nav_select(&mut self, id: nav_bar::Id) -> Task<Self::Message> {
+    fn on_nav_select(&mut self, id: widget::nav_bar::Id) -> Task<Self::Message> {
         self.nav_model.activate(id);
         self.update_title()
     }
@@ -116,7 +118,7 @@ impl cosmic::Application for App {
         if let Some(&page) = self.nav_model.active_data::<Page>() {
             match page {
                 Page::Processes => {
-                    self.process_page.update(&self.sys, message);
+                    self.process_page.update(&self.sys, message, &self.apps);
                 }
                 _ => {}
             }
@@ -129,11 +131,11 @@ impl cosmic::Application for App {
     fn view(&self) -> Element<Self::Message> {
         match self.nav_model.active_data::<Page>() {
             Some(&page) => match page {
-                Page::Overview => container(overview::overview(&self.sys)).into(),
-                Page::Resources => container(resources::resources(&self.sys)).into(),
-                Page::Processes => container(self.process_page.view()).into(),
+                Page::Overview => widget::container(overview::overview(&self.sys)).into(),
+                Page::Resources => widget::container(resources::resources(&self.sys)).into(),
+                Page::Processes => widget::container(self.process_page.view(&self.apps)).into(),
             },
-            _ => text::body("N/A").into(),
+            _ => widget::text::body("").into(),
         }
     }
 }

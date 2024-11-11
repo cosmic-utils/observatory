@@ -1,7 +1,7 @@
 use crate::app::message::Message;
 use crate::app::cosmic_theming;
 
-use cosmic::iced::Alignment;
+use cosmic::iced::{Alignment, ContentFit};
 use cosmic::widget::horizontal_space;
 use cosmic::{
     iced::Length,
@@ -11,9 +11,11 @@ use cosmic::{
     Element,
 };
 use cosmic::iced::alignment::Horizontal;
+use crate::app::applications::Application;
 
 #[derive(Clone, Debug)]
 pub struct Process {
+    icon: String,
     name: String,
     user: String,
     cpu: String,
@@ -50,7 +52,7 @@ impl ProcessPage {
         }
     }
 
-    pub fn update(&mut self, sys: &sysinfo::System, message: Message) {
+    pub fn update(&mut self, sys: &sysinfo::System, message: Message, apps: &Vec<Application>) {
         match message {
             Message::ProcessTermActive => {
                 sys.process(self.selected_process.unwrap())
@@ -65,12 +67,12 @@ impl ProcessPage {
                 self.selected_process = pid
             }
             Message::Refresh => {
-                self.update_processes(sys);
+                self.update_processes(sys, apps);
             }
         };
     }
 
-    pub fn view(&self) -> Element<Message> {
+    pub fn view(&self, apps: &Vec<Application>) -> Element<Message> {
         let theme = cosmic::theme::active();
         let cosmic = theme.cosmic();
 
@@ -87,9 +89,7 @@ impl ProcessPage {
         for process in &self.processes {
             process_group = process_group.push(self.create_process_row(&theme, &process));
         }
-        let process_group_scroll = scrollable(
-            widget::mouse_area(process_group).on_press(Message::ProcessClick(None)),
-        ).width(Length::Fill);
+        let process_group_scroll = scrollable(process_group).width(Length::Fill);
 
         main_column.push(process_group_scroll).into()
     }
@@ -139,12 +139,22 @@ impl ProcessPage {
         name.into()
     }
 
-    pub fn update_processes(&mut self, sys: &sysinfo::System) {
+    pub fn update_processes(&mut self, sys: &sysinfo::System, apps: &Vec<Application>) {
         self.processes = sys
             .processes()
             .values()
             .filter(|process| process.thread_kind().is_none() && process.user_id() == Some(&self.active_uid))
             .map(|process| Process {
+                icon: match apps.iter().find(|app| {
+                    if let Some(cmd) = process.cmd().iter().nth(0) {
+                        app.cmd() == cmd
+                    } else {
+                        false
+                    }
+                }) {
+                    Some(app) => app.icon(),
+                    None => "application-default-symbolic"
+                }.into(),
                 name: Self::get_process_name(process),
                 user: self
                     .users
@@ -254,10 +264,14 @@ impl ProcessPage {
         let cosmic = theme.cosmic();
         let mut row = widget::row::with_capacity::<Message>(5)
             .spacing(cosmic.space_xxxs())
+            .align_y(Alignment::Center)
             .padding([0, cosmic.space_xxs()]);
 
         row = row.push(
-            widget::container(text::body(&process.name))
+            widget::container(row![
+                icon::from_name(process.icon.as_str()).icon().width(Length::Fixed(24.)).height(Length::Fixed(24.)),
+                text::body(&process.name)
+            ].spacing(cosmic.space_xxs()).align_y(Alignment::Center))
                 .width(HeaderCategory::width(&HeaderCategory::Name)));
         row = row.push(
             widget::container(text::body(&process.user))

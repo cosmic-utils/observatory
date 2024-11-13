@@ -6,4 +6,5 @@ pub enum Message {
     ProcessTermActive,
     ProcessKillActive,
     ProcessClick(Option<sysinfo::Pid>),
+    ProcessCategoryClick(u8),
 }

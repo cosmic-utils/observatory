@@ -6,7 +6,6 @@ use cosmic::{
 use cosmic::iced;
 use cosmic::iced_widget;
 
-
 use crate::app::applications::Application;
 use crate::app::message::Message;
 use crate::app::cosmic_theming;
@@ -47,12 +46,23 @@ impl ProcessPage {
                     .unwrap()
                     .kill_with(sysinfo::Signal::Term)
                     .unwrap();
+                self.selected_process = None;
             }
             Message::ProcessKillActive => {
                 sys.process(self.selected_process.unwrap()).unwrap().kill();
+                self.selected_process = None;
             }
             Message::ProcessClick(pid) => {
                 self.selected_process = pid
+            }
+            Message::ProcessCategoryClick(index) => {
+                let cat = HeaderCategory::from_index(index).unwrap();
+                if cat == self.sort_data.0 {
+                    self.sort_data.1.opposite();
+                } else {
+                    self.sort_data = (cat, SortDirection::Descending);
+                }
+                self.sort_processes();
             }
             Message::Refresh => {
                 self.update_processes(sys, apps);
@@ -101,24 +111,25 @@ impl ProcessPage {
     }
 
     pub fn footer(&self) -> Option<Element<Message>> {
+        let theme = cosmic::theme::active();
+        let cosmic = theme.cosmic();
+
+        let mut row = widget::row::with_capacity(4)
+            .align_y(Vertical::Center)
+            .spacing(cosmic.space_xs());
+        row = row.push(widget::horizontal_space());
         if self.selected_process.is_some() {
-            let theme = cosmic::theme::active();
-            let cosmic = theme.cosmic();
-
-            let mut row = widget::row::with_capacity(4)
-                .align_y(Vertical::Center)
-                .spacing(cosmic.space_xs());
-            row = row.push(widget::horizontal_space());
-            row = row.push(widget::button::standard("Kill").on_press(Message::ProcessKillActive));
+            row = row.push(widget::button::destructive("Kill").on_press(Message::ProcessKillActive));
             row = row.push(widget::button::suggested("Terminate").on_press(Message::ProcessTermActive));
-
-            Some(widget::layer_container(row)
-                .layer(cosmic::cosmic_theme::Layer::Primary)
-                .padding([cosmic.space_xxs(), cosmic.space_xs()])
-                .into())
         } else {
-            None
+            row = row.push(widget::button::destructive("Kill"));
+            row = row.push(widget::button::suggested("Terminate"));
         }
+
+        Some(widget::layer_container(row)
+            .layer(cosmic::cosmic_theme::Layer::Primary)
+            .padding([cosmic.space_xxs(), cosmic.space_xs()])
+            .into())
     }
 
     pub fn update_processes(&mut self, sys: &sysinfo::System, apps: &Vec<Application>) {
@@ -133,16 +144,9 @@ impl ProcessPage {
     }
 
     fn sort_processes(&mut self) {
-        self.processes.sort_by(|a, b| match self.sort_data {
-            (HeaderCategory::Name, SortDirection::Descending) => a
-                .name
-                .to_ascii_lowercase()
-                .cmp(&b.name.to_ascii_lowercase()),
-            (HeaderCategory::Name, SortDirection::_Ascending) => b
-                .name
-                .to_ascii_lowercase()
-                .cmp(&a.name.to_ascii_lowercase()),
-            _ => std::cmp::Ordering::Less,
+        self.processes.sort_by(|a, b| match self.sort_data.1 {
+            SortDirection::Ascending => Process::compare(a, b, &self.sort_data.0),
+            SortDirection::Descending => Process::compare(b, a, &self.sort_data.0),
         })
     }
 }
@@ -153,8 +157,11 @@ pub struct Process {
     name: String,
     user: String,
     cpu: String,
+    cpu_percent: f32,
     mem: String,
+    mem_bytes: u64,
     disk: String,
+    disk_bytes: u64,
     pid: sysinfo::Pid,
 }
 
@@ -179,6 +186,7 @@ impl Process {
                 .name()
                 .into(),
             cpu: format!("{:.1}%", process.cpu_usage() / sys.cpus().len() as f32),
+            cpu_percent: process.cpu_usage() / sys.cpus().len() as f32,
             mem: {
                 let bytes = process.memory();
                 let kibibytes = bytes as f64 / 1024.;
@@ -194,6 +202,7 @@ impl Process {
                     format!("{:.2} GiB", gibibytes)
                 }
             },
+            mem_bytes: process.memory(),
             disk: {
                 let bytes =
                     process.disk_usage().read_bytes + process.disk_usage().written_bytes;
@@ -210,7 +219,38 @@ impl Process {
                     format!("{:.1} GiB/s", gibibytes)
                 }
             },
+            disk_bytes: process.disk_usage().read_bytes + process.disk_usage().written_bytes,
             pid: process.pid(),
+        }
+    }
+
+    fn compare(a: &Process, b: &Process, cat: &HeaderCategory) -> std::cmp::Ordering {
+        match cat {
+            HeaderCategory::Name => {
+                let mut ord = b.name.to_ascii_lowercase().cmp(&a.name.to_ascii_lowercase());
+                if ord == std::cmp::Ordering::Equal {
+                    ord = a.pid.cmp(&b.pid);
+                }
+                ord
+            }
+            HeaderCategory::User => {
+                let mut ord = a.user.cmp(&b.user);
+                if ord == std::cmp::Ordering::Equal {
+                    ord = Self::compare(a, b, &HeaderCategory::Name);
+                }
+                ord
+            }
+            HeaderCategory::Cpu => a.cpu_percent.partial_cmp(&b.cpu_percent).unwrap(),
+            HeaderCategory::Memory => {
+                a.mem_bytes.partial_cmp(&b.mem_bytes).unwrap()
+            }
+            HeaderCategory::Disk => {
+                let mut ord = a.disk_bytes.partial_cmp(&b.disk_bytes).unwrap();
+                if ord == std::cmp::Ordering::Equal {
+                    ord = Self::compare(a, b, &HeaderCategory::Name);
+                }
+                ord
+            }
         }
     }
 
@@ -248,7 +288,7 @@ impl Process {
         let row = widget::row::with_children::<Message>(categories.iter().map(|cat|
             self.category_element(theme, cat)
         ).collect())
-            .spacing(cosmic.space_xxxs())
+            .spacing(HeaderCategory::spacing())
             .align_y(Vertical::Center);
 
         // Create the button widget
@@ -283,8 +323,14 @@ impl Process {
 
 #[derive(PartialEq)]
 enum SortDirection {
-    _Ascending,
+    Ascending,
     Descending,
+}
+
+impl SortDirection {
+    fn opposite(&mut self) {
+        if *self == SortDirection::Ascending { *self = SortDirection::Descending; } else { *self = SortDirection::Ascending }
+    }
 }
 
 #[derive(PartialEq, PartialOrd)]
@@ -317,6 +363,10 @@ impl HeaderCategory {
         }
     }
 
+    fn spacing() -> u16 {
+        cosmic::theme::active().cosmic().space_xs()
+    }
+
     fn width(&self) -> Length {
         match self {
             HeaderCategory::Name => 300,
@@ -325,6 +375,27 @@ impl HeaderCategory {
             HeaderCategory::Memory => 80,
             HeaderCategory::Disk => 100,
         }.into()
+    }
+
+    fn index(&self) -> u8 {
+        match self {
+            HeaderCategory::Name => 0,
+            HeaderCategory::User => 1,
+            HeaderCategory::Cpu => 2,
+            HeaderCategory::Memory => 3,
+            HeaderCategory::Disk => 4,
+        }
+    }
+
+    fn from_index(index: u8) -> Option<HeaderCategory> {
+        match index {
+            0 => Some(HeaderCategory::Name),
+            1 => Some(HeaderCategory::User),
+            2 => Some(HeaderCategory::Cpu),
+            3 => Some(HeaderCategory::Memory),
+            4 => Some(HeaderCategory::Disk),
+            _ => None,
+        }
     }
 
     fn element(&self, theme: &cosmic::theme::Theme, sort_data: &(HeaderCategory, SortDirection)) -> Element<Message> {
@@ -336,13 +407,16 @@ impl HeaderCategory {
         if &sort_data.0 == self {
             match sort_data.1 {
                 SortDirection::Descending => row = row.push(widget::container(widget::icon::from_name("pan-down-symbolic"))),
-                SortDirection::_Ascending => row = row.push(widget::container(widget::icon::from_name("pan-up-symbolic"))),
+                SortDirection::Ascending => row = row.push(widget::container(widget::icon::from_name("pan-up-symbolic"))),
             }
         }
 
-        widget::container(row)
+        // Button for changing the sort direction
+
+        widget::mouse_area(widget::container(row)
             .width(self.width())
-            .align_x(self.alignment())
+        )
+            .on_press(Message::ProcessCategoryClick(self.index()))
             .into()
     }
 }

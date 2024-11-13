@@ -123,13 +123,11 @@ impl cosmic::Application for App {
             self.core.set_show_context(false);
         }
 
-        if let Some(&page) = self.nav_model.active_data::<Page>() {
-            match page {
-                Page::Processes => {
-                    self.process_page.update(&self.sys, message, &self.apps);
-                }
-                _ => {}
+        match self.nav_model.active_data::<Page>() {
+            Some(Page::Processes) => {
+                self.process_page.update(&self.sys, message, &self.apps)
             }
+            _ => {}
         };
 
         Task::none()

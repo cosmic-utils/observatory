@@ -8,7 +8,7 @@ use cosmic::iced_widget;
 
 use crate::app::applications::Application;
 use crate::app::message::Message;
-use crate::app::cosmic_theming;
+use crate::cosmic_theming;
 
 pub struct ProcessPage {
     sort_data: (HeaderCategory, SortDirection),
@@ -21,8 +21,8 @@ pub struct ProcessPage {
 }
 
 impl ProcessPage {
-    pub fn new(sys: &sysinfo::System) -> ProcessPage {
-        ProcessPage {
+    pub fn new(sys: &sysinfo::System) -> Self {
+        Self {
             sort_data: (HeaderCategory::Name, SortDirection::Descending),
             users: sysinfo::Users::new_with_refreshed_list(),
             active_uid: sys
@@ -72,6 +72,7 @@ impl ProcessPage {
                     self.selected_process = None;
                 }
             }
+            _ => {}
         };
     }
 

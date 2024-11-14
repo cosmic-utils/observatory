@@ -7,4 +7,6 @@ pub enum Message {
     ProcessKillActive,
     ProcessClick(Option<sysinfo::Pid>),
     ProcessCategoryClick(u8),
+
+    ResourceTabSelected(cosmic::widget::segmented_button::Entity),
 }

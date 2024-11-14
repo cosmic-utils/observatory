@@ -1,5 +1,4 @@
 pub mod message;
-pub mod cosmic_theming;
 pub mod flags;
 mod overview;
 mod processes;
@@ -29,6 +28,7 @@ pub struct App {
 
     sys: sysinfo::System,
     process_page: processes::ProcessPage,
+    resource_page: resources::ResourcePage,
 }
 
 /// Implement [`cosmic::Application`] to integrate with COSMIC.
@@ -70,12 +70,15 @@ impl cosmic::Application for App {
         let mut process_page = processes::ProcessPage::new(&sys);
         process_page.update_processes(&sys, &apps);
 
+        let resource_page = resources::ResourcePage::new(&sys);
+
         let mut app = App {
             core,
             nav_model,
             apps,
             sys,
             process_page,
+            resource_page,
         };
 
         let command = app.update_title();
@@ -119,13 +122,12 @@ impl cosmic::Application for App {
             self.sys.refresh_processes_specifics(ProcessesToUpdate::All, true, ProcessRefreshKind::everything());
         }
 
-        if message == Message::KeyPressed(Key::Named(cosmic::iced::keyboard::key::Named::Escape)) {
-            self.core.set_show_context(false);
-        }
-
         match self.nav_model.active_data::<Page>() {
             Some(Page::Processes) => {
                 self.process_page.update(&self.sys, message, &self.apps)
+            }
+            Some(Page::Resources) => {
+                self.resource_page.update(&self.sys, message);
             }
             _ => {}
         };
@@ -135,13 +137,14 @@ impl cosmic::Application for App {
 
     /// Creates a view after each update.
     fn view(&self) -> Element<Self::Message> {
-        match self.nav_model.active_data::<Page>() {
-            Some(&page) => match page {
+        if let Some(page) = self.nav_model.active_data::<Page>() {
+            match page {
                 Page::Overview => widget::container(overview::overview(&self.sys)).into(),
-                Page::Resources => widget::container(resources::resources(&self.sys)).into(),
+                Page::Resources => widget::container(self.resource_page.view(&self.sys)).into(),
                 Page::Processes => widget::container(self.process_page.view()).into(),
-            },
-            _ => widget::text::body("").into(),
+            }
+        } else {
+            widget::text("ERROR, PAGE NOT SET").into()
         }
     }
 }

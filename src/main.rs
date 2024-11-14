@@ -1,4 +1,6 @@
 mod app;
+mod cosmic_theming;
+mod widget;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let settings = cosmic::app::Settings::default()

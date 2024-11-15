@@ -43,7 +43,7 @@ impl cosmic::Application for App {
     type Message = Message;
 
     /// The unique application ID to supply to the window manager.
-    const APP_ID: &'static str = "org.cosmic.SystemMonitor";
+    const APP_ID: &'static str = "org.cosmic-utils.Observatory";
 
     fn core(&self) -> &Core {
         &self.core

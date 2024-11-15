@@ -995,17 +995,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cosmic-monitor"
-version = "0.1.0"
-dependencies = [
- "cpu-freq",
- "freedesktop_entry_parser",
- "libcosmic",
- "raw-cpuid",
- "sysinfo",
-]
-
-[[package]]
 name = "cosmic-text"
 version = "0.12.1"
 source = "git+https://github.com/pop-os/cosmic-text.git#1f4065c1c3399efad58841082212f7c039b58480"
@@ -3402,6 +3391,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "aedf0a2d09c573ed1d8d85b30c119153926a2b36dce0ab28322c09a117a4683e"
 dependencies = [
  "memchr",
+]
+
+[[package]]
+name = "observatory"
+version = "0.1.0"
+dependencies = [
+ "cpu-freq",
+ "freedesktop_entry_parser",
+ "libcosmic",
+ "raw-cpuid",
+ "sysinfo",
 ]
 
 [[package]]

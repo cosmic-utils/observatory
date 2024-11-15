@@ -59,7 +59,7 @@ impl cosmic::Application for App {
         nav_model.insert().text("Overview").data(Page::Overview);
         nav_model.insert().text("Resources").data(Page::Resources);
         nav_model.insert().text("Processes").data(Page::Processes);
-        nav_model.activate_position(2);
+        nav_model.activate_position(1);
 
         let apps = applications::Application::scan_all();
 
@@ -70,7 +70,7 @@ impl cosmic::Application for App {
         let mut process_page = processes::ProcessPage::new(&sys);
         process_page.update_processes(&sys, &apps);
 
-        let resource_page = resources::ResourcePage::new(&sys);
+        let resource_page = resources::ResourcePage::new();
 
         let mut app = App {
             core,
@@ -121,16 +121,8 @@ impl cosmic::Application for App {
             self.sys.refresh_memory();
             self.sys.refresh_processes_specifics(ProcessesToUpdate::All, true, ProcessRefreshKind::everything());
         }
-
-        match self.nav_model.active_data::<Page>() {
-            Some(Page::Processes) => {
-                self.process_page.update(&self.sys, message, &self.apps)
-            }
-            Some(Page::Resources) => {
-                self.resource_page.update(&self.sys, message);
-            }
-            _ => {}
-        };
+        self.process_page.update(&self.sys, message.clone(), &self.apps);
+        self.resource_page.update(&self.sys, message.clone());
 
         Task::none()
     }

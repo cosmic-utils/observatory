@@ -25,10 +25,7 @@ impl ProcessPage {
         Self {
             sort_data: (HeaderCategory::Name, SortDirection::Descending),
             users: sysinfo::Users::new_with_refreshed_list(),
-            active_uid: sys
-                .processes()
-                .values()
-                .find(|process| process.name() == "cosmic-monitor")
+            active_uid: sys.process(sysinfo::get_current_pid().unwrap())
                 .unwrap()
                 .user_id()
                 .unwrap()
@@ -91,7 +88,7 @@ impl ProcessPage {
                     .map(|cat| cat.element(&theme, &self.sort_data))
                     .collect())
                 .spacing(cosmic.space_xxxs())
-                .padding([cosmic.space_xxs(), cosmic.space_xxs()]))
+                .padding([0, cosmic.space_xxs()]))
             .push(iced_widget::horizontal_rule(1));
 
         let mut process_column = widget::column().spacing(cosmic.space_xxxs()).padding([0, cosmic.space_xxs(), 0, 0]);
@@ -403,6 +400,7 @@ impl HeaderCategory {
         let cosmic = theme.cosmic();
         let mut row = widget::row::with_capacity::<Message>(2)
             .align_y(Vertical::Center)
+            .padding([cosmic.space_xxs(), 0])
             .spacing(cosmic.space_xxs());
         row = row.push(widget::text::heading(self.name()));
         if &sort_data.0 == self {

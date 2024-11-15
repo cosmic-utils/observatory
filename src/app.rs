@@ -1,7 +1,7 @@
 pub mod message;
 pub mod flags;
 mod overview;
-mod processes;
+mod process_page;
 mod resources;
 pub mod applications;
 
@@ -27,7 +27,7 @@ pub struct App {
     apps: Vec<applications::Application>,
 
     sys: sysinfo::System,
-    process_page: processes::ProcessPage,
+    process_page: process_page::ProcessPage,
     resource_page: resources::ResourcePage,
 }
 
@@ -39,7 +39,7 @@ impl cosmic::Application for App {
     /// Argument received [`cosmic::Application::new`].
     type Flags = flags::Flags;
 
-    /// Message type specific to our [`App`].
+    /// Message types specific to our [`App`].
     type Message = Message;
 
     /// The unique application ID to supply to the window manager.
@@ -67,7 +67,7 @@ impl cosmic::Application for App {
         std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
         sys.refresh_processes_specifics(ProcessesToUpdate::All, true, ProcessRefreshKind::everything());
 
-        let mut process_page = processes::ProcessPage::new(&sys);
+        let mut process_page = process_page::ProcessPage::new(&sys);
         process_page.update_processes(&sys, &apps);
 
         let resource_page = resources::ResourcePage::new();

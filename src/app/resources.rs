@@ -18,6 +18,7 @@ pub struct ResourcePage {
     active_page: TabPage,
     cpu_id: raw_cpuid::CpuId<raw_cpuid::CpuIdReaderNative>,
     cpu_usages: VecDeque<f32>,
+    mem_usages: VecDeque<f32>,
 }
 
 impl ResourcePage {
@@ -33,7 +34,8 @@ impl ResourcePage {
             tab_model,
             active_page: TabPage::Cpu,
             cpu_id: raw_cpuid::CpuId::new(),
-            cpu_usages: VecDeque::from([0.0]),
+            cpu_usages: VecDeque::from([0.0; 60]),
+            mem_usages: VecDeque::from([0.0; 60]),
         }
     }
 
@@ -44,9 +46,9 @@ impl ResourcePage {
                 self.active_page = self.tab_model.active_data::<TabPage>().unwrap().clone();
             }
             Message::Refresh => {
-                self.cpu_usages.push_front(sys.global_cpu_usage() / 100.);
+                self.cpu_usages.push_back(sys.global_cpu_usage() / 100.);
                 if self.cpu_usages.len() > 60 {
-                    self.cpu_usages.pop_back();
+                    self.cpu_usages.pop_front();
                 }
             }
             _ => {}
@@ -75,7 +77,7 @@ impl ResourcePage {
 
     fn cpu_graph(&self) -> Element<Message> {
         // Usage graph
-        widget::container(widget::canvas(crate::widget::line_graph::LineGraph { steps: 59, points: self.cpu_usages.clone() })
+        widget::container(widget::canvas(crate::widget::LineGraph { steps: 59, points: self.cpu_usages.clone() })
             .height(Length::Fill)
             .width(Length::Fill)
         )
@@ -168,6 +170,18 @@ impl ResourcePage {
             .width(Length::Fill)
             .height(Length::Fill)
     }
+
+    fn mem_graph(&self) -> Element<Message> {
+        // Usage graph
+        widget::container(widget::canvas(crate::widget::line_graph::LineGraph { steps: 59, points: self.mem_usages.clone() })
+            .height(Length::Fill)
+            .width(Length::Fill)
+        )
+            .width(Length::Fill)
+            .into()
+    }
+
+
     fn mem(&self, _sys: &sysinfo::System) -> iced_widget::Container<Message, theme::Theme> {
         widget::container(widget::text::heading("Mem Information TODO"))
     }

@@ -28,7 +28,6 @@ impl canvas::Program<crate::app::message::Message, theme::Theme> for LineGraph {
             ..Default::default()
         });
 
-
         // Draw grid
         let mut grid_builder = path::Builder::new();
         let grid_step_x = scale.x / 10.;
@@ -61,9 +60,8 @@ impl canvas::Program<crate::app::message::Message, theme::Theme> for LineGraph {
         let mut shade_builder = path::Builder::new();
         let mut points = Vec::new();
         for i in 0..self.points.len() {
-            points.push(Point::new(bottom_right.x - step_length * i as f32, bottom_right.y - self.points[i] * scale.y));
+            points.push(Point::new(top_left.x + step_length * i as f32, bottom_right.y - self.points[i] * scale.y));
         }
-        points = points.iter().rev().copied().collect();
         shade_builder.move_to(Point::new(top_left.x, bottom_right.y));
         shade_builder.line_to(points[0]);
         for i in 1..points.len() {

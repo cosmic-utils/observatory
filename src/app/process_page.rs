@@ -1,19 +1,17 @@
 mod category;
 mod process;
 
-use cosmic::{
-    iced::{Length, alignment::{Vertical}},
-    widget,
-    Element,
-};
 use cosmic::iced;
 use cosmic::iced_widget;
+use cosmic::{
+    iced::{alignment::Vertical, Length},
+    widget, Element,
+};
 
 use crate::app::applications::Application;
 use crate::app::message::Message;
 use category::{Category, CategoryList, Sort};
 use process::Process;
-
 
 pub struct ProcessPage {
     sort_data: (Category, Sort),
@@ -22,7 +20,6 @@ pub struct ProcessPage {
     categories: CategoryList,
     processes: Vec<Process>,
     selected_process: Option<sysinfo::Pid>,
-
 }
 
 impl ProcessPage {
@@ -30,7 +27,8 @@ impl ProcessPage {
         Self {
             sort_data: (Category::Name, Sort::Descending),
             users: sysinfo::Users::new_with_refreshed_list(),
-            active_uid: sys.process(sysinfo::get_current_pid().unwrap())
+            active_uid: sys
+                .process(sysinfo::get_current_pid().unwrap())
                 .unwrap()
                 .user_id()
                 .unwrap()
@@ -54,9 +52,7 @@ impl ProcessPage {
                 sys.process(self.selected_process.unwrap()).unwrap().kill();
                 self.selected_process = None;
             }
-            Message::ProcessClick(pid) => {
-                self.selected_process = pid
-            }
+            Message::ProcessClick(pid) => self.selected_process = pid,
             Message::ProcessCategoryClick(index) => {
                 let cat = Category::from_index(index);
                 if cat == self.sort_data.0 {
@@ -85,26 +81,38 @@ impl ProcessPage {
         // The vertical column of process elements
         let col = widget::column::with_children(vec![
             self.categories.element(&theme, &self.sort_data),
-            iced_widget::horizontal_rule(1).into()
-        ]).width(Length::Fixed(700.));
+            iced_widget::horizontal_rule(1).into(),
+        ])
+        .width(Length::Fixed(700.));
 
-
-        let mut process_column = widget::column().spacing(cosmic.space_xxxs()).padding([0, cosmic.space_xxs(), 0, 0]);
+        let mut process_column =
+            widget::column()
+                .spacing(cosmic.space_xxxs())
+                .padding([0, cosmic.space_xxs(), 0, 0]);
         for process in &self.processes {
-            process_column = process_column.push(process.element(&theme, self.selected_process == Some(process.pid)));
+            process_column = process_column
+                .push(process.element(&theme, self.selected_process == Some(process.pid)));
         }
         // Push process rows into scrollable widget
         let process_group_scroll = widget::context_menu(
             iced_widget::Scrollable::with_direction(
                 process_column,
-                iced_widget::scrollable::Direction::Vertical(iced_widget::scrollable::Scrollbar::default())).width(Length::Fill),
-            ContextMenuAction::menu());
+                iced_widget::scrollable::Direction::Vertical(
+                    iced_widget::scrollable::Scrollbar::default(),
+                ),
+            )
+            .width(Length::Fill),
+            ContextMenuAction::menu(),
+        );
 
         iced_widget::Scrollable::with_direction(
             col.push(process_group_scroll),
-            iced_widget::scrollable::Direction::Horizontal(iced_widget::scrollable::Scrollbar::default()))
-            .width(Length::Fill)
-            .into()
+            iced_widget::scrollable::Direction::Horizontal(
+                iced_widget::scrollable::Scrollbar::default(),
+            ),
+        )
+        .width(Length::Fill)
+        .into()
     }
 
     pub fn footer(&self) -> Option<Element<Message>> {
@@ -116,24 +124,30 @@ impl ProcessPage {
             .spacing(cosmic.space_xs());
         row = row.push(widget::horizontal_space());
         if self.selected_process.is_some() {
-            row = row.push(widget::button::destructive("Kill").on_press(Message::ProcessKillActive));
-            row = row.push(widget::button::suggested("Terminate").on_press(Message::ProcessTermActive));
+            row =
+                row.push(widget::button::destructive("Kill").on_press(Message::ProcessKillActive));
+            row = row
+                .push(widget::button::suggested("Terminate").on_press(Message::ProcessTermActive));
         } else {
             row = row.push(widget::button::destructive("Kill"));
             row = row.push(widget::button::suggested("Terminate"));
         }
 
-        Some(widget::layer_container(row)
-            .layer(cosmic::cosmic_theme::Layer::Primary)
-            .padding([cosmic.space_xxs(), cosmic.space_xs()])
-            .into())
+        Some(
+            widget::layer_container(row)
+                .layer(cosmic::cosmic_theme::Layer::Primary)
+                .padding([cosmic.space_xxs(), cosmic.space_xs()])
+                .into(),
+        )
     }
 
     pub fn update_processes(&mut self, sys: &sysinfo::System, apps: &Vec<Application>) {
         self.processes = sys
             .processes()
             .values()
-            .filter(|process| process.thread_kind().is_none() && process.user_id() == Some(&self.active_uid))
+            .filter(|process| {
+                process.thread_kind().is_none() && process.user_id() == Some(&self.active_uid)
+            })
             .map(|process| Process::from_process(&self.categories, process, apps, sys, &self.users))
             .collect();
 
@@ -147,7 +161,6 @@ impl ProcessPage {
         })
     }
 }
-
 
 #[derive(PartialEq, Clone, Copy, Eq, Debug)]
 enum ContextMenuAction {

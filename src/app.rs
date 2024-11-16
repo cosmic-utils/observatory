@@ -21,9 +21,10 @@ pub use cosmic::app::{Core, Task};
 use cosmic::cosmic_config::{CosmicConfigEntry, Update};
 use cosmic::cosmic_theme::ThemeMode;
 use cosmic::iced::keyboard::{Key, Modifiers};
+use cosmic::iced::{event, keyboard::Event as KeyEvent, Event};
 use cosmic::widget;
 use cosmic::widget::about::About;
-use cosmic::widget::menu::KeyBind;
+use cosmic::widget::menu::{Action as _, KeyBind};
 pub use cosmic::{executor, ApplicationExt, Element};
 use key_binds::key_binds;
 use message::Message;
@@ -45,6 +46,7 @@ pub struct App {
     handler: Option<cosmic::cosmic_config::Config>,
     config: ObservatoryConfig,
     app_themes: Vec<String>,
+    modifiers: Modifiers,
     key_binds: HashMap<KeyBind, Action>,
     context_page: ContextPage,
     sys: sysinfo::System,
@@ -150,6 +152,7 @@ impl cosmic::Application for App {
             handler,
             config,
             app_themes,
+            modifiers: Modifiers::empty(),
             key_binds: key_binds(),
             context_page: ContextPage::Settings,
             apps,
@@ -192,6 +195,16 @@ impl cosmic::Application for App {
         struct ConfigSubscription;
         struct ThemeSubscription;
 
+        let keybinds = event::listen_with(|event, _status, _window_id| match event {
+            Event::Keyboard(KeyEvent::KeyPressed { key, modifiers, .. }) => {
+                Some(Message::Key(modifiers, key))
+            }
+            Event::Keyboard(KeyEvent::ModifiersChanged(modifiers)) => {
+                Some(Message::Modifiers(modifiers))
+            }
+            _ => None,
+        });
+
         let config = cosmic::cosmic_config::config_subscription(
             TypeId::of::<ConfigSubscription>(),
             Self::APP_ID.into(),
@@ -224,7 +237,7 @@ impl cosmic::Application for App {
                 Message::SystemThemeChanged
             });
 
-        cosmic::iced::Subscription::batch([update_clock, key_press, config, theme])
+        cosmic::iced::Subscription::batch([update_clock, key_press, keybinds, config, theme])
     }
 
     /// Handle application events here.
@@ -255,6 +268,16 @@ impl cosmic::Application for App {
                 }
             }
             Message::ContextClose => self.core.window.show_context = false,
+            Message::Key(modifiers, ref key) => {
+                for (key_bind, action) in &self.key_binds {
+                    if key_bind.matches(modifiers, key) {
+                        return self.update(action.message());
+                    }
+                }
+            }
+            Message::Modifiers(modifiers) => {
+                self.modifiers = modifiers;
+            }
             _ => (),
         }
         self.process_page

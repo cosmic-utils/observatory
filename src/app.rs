@@ -12,7 +12,7 @@ mod resources;
 use std::any::TypeId;
 use std::collections::HashMap;
 
-use crate::core::config::ObservatoryConfig;
+use crate::core::config::{AppTheme, ObservatoryConfig};
 use crate::fl;
 use action::Action;
 use context_page::ContextPage;
@@ -277,6 +277,13 @@ impl cosmic::Application for App {
             }
             Message::Modifiers(modifiers) => {
                 self.modifiers = modifiers;
+            }
+            Message::AppTheme(theme) => {
+                if let Some(ref handler) = self.handler {
+                    if let Err(err) = self.config.set_app_theme(handler, theme.into()) {
+                        log::error!("Failed to set app theme: {}", err);
+                    }
+                }
             }
             _ => (),
         }

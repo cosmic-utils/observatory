@@ -1,16 +1,17 @@
-pub mod message;
+pub mod applications;
 pub mod flags;
+pub mod message;
 mod overview;
 mod process_page;
 mod resources;
-pub mod applications;
 
+use crate::fl;
 pub use cosmic::app::{Core, Task};
+use cosmic::iced::keyboard::{Key, Modifiers};
 use cosmic::widget;
 pub use cosmic::{executor, ApplicationExt, Element};
-use cosmic::iced::keyboard::{Key, Modifiers};
-use sysinfo::{ProcessRefreshKind, ProcessesToUpdate};
 use message::Message;
+use sysinfo::{ProcessRefreshKind, ProcessesToUpdate};
 
 #[derive(Clone, Copy)]
 pub enum Page {
@@ -23,9 +24,7 @@ pub enum Page {
 pub struct App {
     core: Core,
     nav_model: widget::nav_bar::Model,
-
     apps: Vec<applications::Application>,
-
     sys: sysinfo::System,
     process_page: process_page::ProcessPage,
     resource_page: resources::ResourcePage,
@@ -56,16 +55,29 @@ impl cosmic::Application for App {
     /// Creates the application, and optionally emits command on initialize.
     fn init(core: Core, _input: Self::Flags) -> (Self, Task<Self::Message>) {
         let mut nav_model = widget::nav_bar::Model::default();
-        nav_model.insert().text("Overview").data(Page::Overview);
-        nav_model.insert().text("Resources").data(Page::Resources);
-        nav_model.insert().text("Processes").data(Page::Processes);
+        nav_model
+            .insert()
+            .text(fl!("overview"))
+            .data(Page::Overview);
+        nav_model
+            .insert()
+            .text(fl!("resources"))
+            .data(Page::Resources);
+        nav_model
+            .insert()
+            .text(fl!("processes"))
+            .data(Page::Processes);
         nav_model.activate_position(1);
 
         let apps = applications::Application::scan_all();
 
         let mut sys = sysinfo::System::new_all();
         std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
-        sys.refresh_processes_specifics(ProcessesToUpdate::All, true, ProcessRefreshKind::everything());
+        sys.refresh_processes_specifics(
+            ProcessesToUpdate::All,
+            true,
+            ProcessRefreshKind::everything(),
+        );
 
         let mut process_page = process_page::ProcessPage::new(&sys);
         process_page.update_processes(&sys, &apps);
@@ -109,7 +121,8 @@ impl cosmic::Application for App {
     fn subscription(&self) -> cosmic::iced::Subscription<Message> {
         let update_clock = cosmic::iced::time::every(cosmic::iced::time::Duration::from_secs(1))
             .map(|_| Message::Refresh);
-        let key_press = cosmic::iced_winit::graphics::futures::keyboard::on_key_press(key_to_message);
+        let key_press =
+            cosmic::iced_winit::graphics::futures::keyboard::on_key_press(key_to_message);
 
         cosmic::iced::Subscription::batch([update_clock, key_press])
     }
@@ -119,9 +132,14 @@ impl cosmic::Application for App {
         if message == Message::Refresh {
             self.sys.refresh_cpu_all();
             self.sys.refresh_memory();
-            self.sys.refresh_processes_specifics(ProcessesToUpdate::All, true, ProcessRefreshKind::everything());
+            self.sys.refresh_processes_specifics(
+                ProcessesToUpdate::All,
+                true,
+                ProcessRefreshKind::everything(),
+            );
         }
-        self.process_page.update(&self.sys, message.clone(), &self.apps);
+        self.process_page
+            .update(&self.sys, message.clone(), &self.apps);
         self.resource_page.update(&self.sys, message.clone());
 
         Task::none()

@@ -82,9 +82,11 @@ impl cosmic::Application for App {
         Some(match self.context_page {
             ContextPage::About => {
                 context_drawer::about(&self.about, Message::Open, Message::ContextClose)
+                    .title(self.context_page.title())
             }
             ContextPage::Settings => {
                 context_drawer::context_drawer(self.settings(), Message::ContextClose)
+                    .title(self.context_page.title())
             }
         })
     }

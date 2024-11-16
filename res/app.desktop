@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Observatory
+Exec=observatory %F
+Terminal=false
+Type=Application
+StartupNotify=true
+Icon=org.cosmic-utils.Observatory
+Categories=COSMIC;
+Keywords=
+MimeType=

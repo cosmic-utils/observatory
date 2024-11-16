@@ -13,6 +13,7 @@ open = "5.3.0"
 rust-embed = "8.5.0"
 serde = { version = "1.0.215", features = ["derive"] }
 log = "0.4.22"
+env_logger = "0.11.5"
 
 [dependencies.libcosmic]
 git = "https://github.com/pop-os/libcosmic.git"

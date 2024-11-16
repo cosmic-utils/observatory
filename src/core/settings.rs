@@ -7,6 +7,7 @@ use super::i18n;
 pub fn init() {
     let requested_languages = i18n_embed::DesktopLanguageRequester::requested_languages();
     i18n::init(&requested_languages);
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("warn")).init();
 }
 
 pub fn settings() -> Settings {

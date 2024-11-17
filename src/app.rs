@@ -12,7 +12,7 @@ mod resource_page;
 use std::any::TypeId;
 use std::collections::HashMap;
 
-use crate::core::config::{AppTheme, ObservatoryConfig};
+use crate::core::config::ObservatoryConfig;
 use crate::fl;
 use action::Action;
 use context_page::ContextPage;
@@ -50,6 +50,7 @@ pub struct App {
     key_binds: HashMap<KeyBind, Action>,
     context_page: ContextPage,
     sys: sysinfo::System,
+    overview_page: overview_page::OverviewPage,
     process_page: process_page::ProcessPage,
     resource_page: resource_page::ResourcePage,
 }
@@ -76,34 +77,13 @@ impl cosmic::Application for App {
         &mut self.core
     }
 
-    fn context_drawer(&self) -> Option<context_drawer::ContextDrawer<Self::Message>> {
-        if !self.core.window.show_context {
-            return None;
-        }
-
-        Some(match self.context_page {
-            ContextPage::About => {
-                context_drawer::about(&self.about, Message::Open, Message::ContextClose)
-                    .title(self.context_page.title())
-            }
-            ContextPage::Settings => {
-                context_drawer::context_drawer(self.settings(), Message::ContextClose)
-                    .title(self.context_page.title())
-            }
-        })
-    }
-
-    fn header_start(&self) -> Vec<Element<Self::Message>> {
-        vec![menu::menu_bar(&self.key_binds)]
-    }
-
     /// Creates the application, and optionally emits command on initialize.
     fn init(core: Core, _input: Self::Flags) -> (Self, Task<Self::Message>) {
         let mut nav_model = widget::nav_bar::Model::default();
         nav_model.insert().text("Overview").data(Page::Overview);
         nav_model.insert().text("Resources").data(Page::Resources);
         nav_model.insert().text("Processes").data(Page::Processes);
-        nav_model.activate_position(1);
+        nav_model.activate_position(0);
 
         let apps = applications::Application::scan_all();
 
@@ -119,6 +99,8 @@ impl cosmic::Application for App {
         process_page.update_processes(&sys, &apps);
 
         let resource_page = resource_page::ResourcePage::new();
+
+        let overview_page = overview_page::OverviewPage::new();
 
         let (config, handler) = (
             ObservatoryConfig::config(),
@@ -157,12 +139,30 @@ impl cosmic::Application for App {
             context_page: ContextPage::Settings,
             apps,
             sys,
+            overview_page,
             process_page,
             resource_page,
         };
 
         let command = app.update_title();
         (app, command)
+    }
+
+    fn context_drawer(&self) -> Option<context_drawer::ContextDrawer<Self::Message>> {
+        if !self.core.window.show_context {
+            return None;
+        }
+
+        Some(match self.context_page {
+            ContextPage::About => {
+                context_drawer::about(&self.about, Message::Open, Message::ContextClose)
+                    .title(self.context_page.title())
+            }
+            ContextPage::Settings => {
+                context_drawer::context_drawer(self.settings(), Message::ContextClose)
+                    .title(self.context_page.title())
+            }
+        })
     }
 
     fn footer(&self) -> Option<Element<Self::Message>> {
@@ -173,6 +173,10 @@ impl cosmic::Application for App {
             },
             _ => None,
         }
+    }
+
+    fn header_start(&self) -> Vec<Element<Self::Message>> {
+        vec![menu::menu_bar(&self.key_binds)]
     }
 
     /// Allows COSMIC to integrate with your application's [`nav_bar::Model`].
@@ -221,10 +225,10 @@ impl cosmic::Application for App {
             Message::SystemThemeChanged
         });
         let theme =
-            cosmic::cosmic_config::config_subscription::<_, cosmic::cosmic_theme::ThemeMode>(
+            cosmic::cosmic_config::config_subscription::<_, ThemeMode>(
                 TypeId::of::<ThemeSubscription>(),
                 cosmic::cosmic_theme::THEME_MODE_ID.into(),
-                cosmic::cosmic_theme::ThemeMode::version(),
+                ThemeMode::version(),
             )
             .map(|update: Update<ThemeMode>| {
                 if !update.errors.is_empty() {
@@ -290,6 +294,7 @@ impl cosmic::Application for App {
         self.process_page
             .update(&self.sys, message.clone(), &self.apps);
         self.resource_page.update(&self.sys, message.clone());
+        self.overview_page.update(&self.sys, message.clone());
 
         Task::batch(tasks)
     }
@@ -298,7 +303,7 @@ impl cosmic::Application for App {
     fn view(&self) -> Element<Self::Message> {
         if let Some(page) = self.nav_model.active_data::<Page>() {
             match page {
-                Page::Overview => widget::container(overview_page::overview(&self.sys)).into(),
+                Page::Overview => widget::container(self.overview_page.view(&self.sys)).into(),
                 Page::Resources => widget::container(self.resource_page.view(&self.sys)).into(),
                 Page::Processes => widget::container(self.process_page.view()).into(),
             }

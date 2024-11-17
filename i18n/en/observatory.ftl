@@ -20,3 +20,7 @@ total-mem = Total memory
 total-swap = Total swap
 mem-utilization = Memory utilization
 swap-utilization = Swap utilizaiton
+total-read = Total read
+total-write = Total write
+read = Read
+write = Write

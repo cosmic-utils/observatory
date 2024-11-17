@@ -3,6 +3,7 @@ use crate::fl;
 use std::collections::VecDeque;
 
 use cosmic::iced_widget::horizontal_rule;
+use cosmic::widget::Space;
 use cosmic::{
     iced::{
         alignment::{Horizontal, Vertical},
@@ -17,6 +18,10 @@ pub struct ResourcePage {
     cpu_id: raw_cpuid::CpuId<raw_cpuid::CpuIdReaderNative>,
     cpu_usages: VecDeque<f32>,
     mem_usages: VecDeque<f32>,
+    write_disk_usages: VecDeque<f32>,
+    read_disk_usages: VecDeque<f32>,
+    total_disk_read: u64,
+    total_disk_write: u64,
 }
 
 impl ResourcePage {
@@ -33,6 +38,10 @@ impl ResourcePage {
             cpu_id: raw_cpuid::CpuId::new(),
             cpu_usages: VecDeque::from([0.0; 60]),
             mem_usages: VecDeque::from([0.0; 60]),
+            write_disk_usages: VecDeque::from([0.0; 60]),
+            read_disk_usages: VecDeque::from([0.0; 60]),
+            total_disk_read: 0,
+            total_disk_write: 0,
         }
     }
 
@@ -53,6 +62,26 @@ impl ResourcePage {
                 if self.mem_usages.len() > 60 {
                     self.mem_usages.pop_front();
                 }
+                let read_sum: u64 = sys
+                    .processes()
+                    .iter()
+                    .map(|p| p.1.disk_usage().read_bytes)
+                    .sum();
+                let write_sum: u64 = sys
+                    .processes()
+                    .iter()
+                    .map(|p| p.1.disk_usage().written_bytes)
+                    .sum();
+                self.total_disk_read += read_sum;
+                self.total_disk_write += write_sum;
+                self.write_disk_usages.push_back(write_sum as f32);
+                if self.write_disk_usages.len() > 60 {
+                    self.write_disk_usages.pop_front();
+                }
+                self.read_disk_usages.push_back(read_sum as f32);
+                if self.read_disk_usages.len() > 60 {
+                    self.read_disk_usages.pop_front();
+                }
             }
             _ => {}
         }
@@ -72,7 +101,7 @@ impl ResourcePage {
         let page_data = match self.active_page {
             TabPage::Cpu => self.cpu(&theme, sys),
             TabPage::Memory => self.mem(&theme, sys),
-            TabPage::Disk => self.disk(sys),
+            TabPage::Disk => self.disk(&theme, sys),
         }
         .width(Length::Fill);
 
@@ -85,6 +114,7 @@ impl ResourcePage {
             widget::canvas(crate::widget::LineGraph {
                 steps: 59,
                 points: self.cpu_usages.clone(),
+                autoscale: false,
             })
             .height(Length::Fill)
             .width(Length::Fill),
@@ -291,6 +321,7 @@ impl ResourcePage {
             widget::canvas(crate::widget::line_graph::LineGraph {
                 steps: 59,
                 points: self.mem_usages.clone(),
+                autoscale: false,
             })
             .height(Length::Fill)
             .width(Length::Fill),
@@ -332,8 +363,136 @@ impl ResourcePage {
         .height(Length::Fill)
     }
 
-    fn disk(&self, _sys: &sysinfo::System) -> iced_widget::Container<Message, theme::Theme> {
-        widget::container(widget::text::heading("Disk Information TODO"))
+    fn disk(
+        &self,
+        theme: &theme::Theme,
+        sys: &sysinfo::System,
+    ) -> iced_widget::Container<Message, theme::Theme> {
+        let cosmic = theme.cosmic();
+        let mem_name = widget::container(
+            widget::text::title3(fl!("disk"))
+                .width(Length::Fill)
+                .height(Length::Shrink)
+                .align_x(Horizontal::Left)
+                .align_y(Vertical::Center),
+        );
+
+        let page = widget::row::with_children::<Message>(vec![
+            widget::column()
+                .push(widget::text::text(fl!("read")))
+                .push(self.read_disk_graph())
+                .push(widget::text::text(fl!("write")))
+                .push(self.write_disk_graph())
+                .into(),
+            self.disk_info_column(theme, sys),
+        ])
+        .spacing(cosmic.space_s());
+
+        widget::container(
+            widget::column::with_children(vec![
+                mem_name.into(),
+                horizontal_rule(1).into(),
+                page.into(),
+            ])
+            .spacing(cosmic.space_xs()),
+        )
+        .padding([cosmic.space_xxs(), cosmic.space_xxs()])
+        .width(Length::Fill)
+        .height(Length::Fill)
+    }
+
+    fn disk_info_column(&self, theme: &theme::Theme, sys: &sysinfo::System) -> Element<Message> {
+        let cosmic = theme.cosmic();
+        let mut col = widget::column::with_capacity(10);
+        col = col.push(
+            widget::row::with_children(vec![
+                widget::column::with_children(vec![
+                    widget::text::heading(fl!("total-read")).into(),
+                    horizontal_rule(1).into(),
+                    widget::text::body(format!("{}", format_size(self.total_disk_read),)).into(),
+                ])
+                .spacing(cosmic.space_xxxs())
+                .into(),
+                widget::column::with_children(vec![
+                    widget::text::heading(fl!("total-write")).into(),
+                    horizontal_rule(1).into(),
+                    widget::text::body(format!("{}", format_size(self.total_disk_write),)).into(),
+                ])
+                .spacing(cosmic.space_xxxs())
+                .into(),
+            ])
+            .spacing(cosmic.space_xxs()),
+        );
+
+        let read_sum: u64 = sys
+            .processes()
+            .iter()
+            .map(|p| p.1.disk_usage().read_bytes)
+            .sum();
+        let write_sum: u64 = sys
+            .processes()
+            .iter()
+            .map(|p| p.1.disk_usage().written_bytes)
+            .sum();
+
+        col = col.push(
+            widget::row::with_children(vec![
+                widget::column::with_children(vec![
+                    widget::text::heading(fl!("read")).into(),
+                    horizontal_rule(1).into(),
+                    widget::text::body(format!("{}", format_size(read_sum),)).into(),
+                ])
+                .spacing(cosmic.space_xxxs())
+                .into(),
+                widget::column::with_children(vec![
+                    widget::text::heading(fl!("write")).into(),
+                    horizontal_rule(1).into(),
+                    widget::text::body(format!("{}", format_size(write_sum),)).into(),
+                ])
+                .spacing(cosmic.space_xxxs())
+                .into(),
+            ])
+            .spacing(cosmic.space_xxs()),
+        );
+
+        widget::container(
+            col.width(Length::Fixed(256.))
+                .height(Length::Fill)
+                .spacing(cosmic.space_s())
+                .padding([cosmic.space_xs(), cosmic.space_xs()]),
+        )
+        .class(theme::Container::Primary)
+        .into()
+    }
+
+    fn write_disk_graph(&self) -> Element<Message> {
+        // Usage graph
+        widget::container(
+            widget::canvas(crate::widget::line_graph::LineGraph {
+                steps: 59,
+                points: self.write_disk_usages.clone(),
+                autoscale: true,
+            })
+            .height(Length::Fill)
+            .width(Length::Fill),
+        )
+        .width(Length::Fill)
+        .into()
+    }
+
+    fn read_disk_graph(&self) -> Element<Message> {
+        // Usage graph
+        widget::container(
+            widget::canvas(crate::widget::line_graph::LineGraph {
+                steps: 59,
+                points: self.read_disk_usages.clone(),
+                autoscale: true,
+            })
+            .height(Length::Fill)
+            .width(Length::Fill),
+        )
+        .width(Length::Fill)
+        .into()
     }
 }
 

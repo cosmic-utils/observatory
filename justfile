@@ -52,7 +52,7 @@ check-json: (check '--message-format=json')
 
 # Run the application for testing purposes
 run *args:
-    env RUST_BACKTRACE=full cargo run --release {{args}}
+    env RUST_LOG=observatory=debug RUST_BACKTRACE=full cargo run --release {{args}}
 
 # Installs files
 install:

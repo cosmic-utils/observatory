@@ -112,7 +112,7 @@ impl ProcessPage {
             ),
         )
         .width(Length::Fill)
-            .height(Length::Fill)
+        .height(Length::Fill)
         .into()
     }
 

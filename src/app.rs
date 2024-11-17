@@ -224,22 +224,21 @@ impl cosmic::Application for App {
             }
             Message::SystemThemeChanged
         });
-        let theme =
-            cosmic::cosmic_config::config_subscription::<_, ThemeMode>(
-                TypeId::of::<ThemeSubscription>(),
-                cosmic::cosmic_theme::THEME_MODE_ID.into(),
-                ThemeMode::version(),
-            )
-            .map(|update: Update<ThemeMode>| {
-                if !update.errors.is_empty() {
-                    log::info!(
-                        "errors loading theme mode {:?}: {:?}",
-                        update.keys,
-                        update.errors
-                    );
-                }
-                Message::SystemThemeChanged
-            });
+        let theme = cosmic::cosmic_config::config_subscription::<_, ThemeMode>(
+            TypeId::of::<ThemeSubscription>(),
+            cosmic::cosmic_theme::THEME_MODE_ID.into(),
+            ThemeMode::version(),
+        )
+        .map(|update: Update<ThemeMode>| {
+            if !update.errors.is_empty() {
+                log::info!(
+                    "errors loading theme mode {:?}: {:?}",
+                    update.keys,
+                    update.errors
+                );
+            }
+            Message::SystemThemeChanged
+        });
 
         cosmic::iced::Subscription::batch([update_clock, key_press, keybinds, config, theme])
     }

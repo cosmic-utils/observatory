@@ -1,10 +1,10 @@
-use cosmic::iced::{Degrees, Rectangle, Renderer, Vector};
 use cosmic::iced::alignment::{Horizontal, Vertical};
-use cosmic::iced::widget::canvas;
-use cosmic::Theme;
 use cosmic::iced::mouse::Cursor;
+use cosmic::iced::widget::canvas;
+use cosmic::iced::{Degrees, Rectangle, Renderer, Vector};
 use cosmic::iced_core::text::{LineHeight, Shaping};
 use cosmic::iced_widget::canvas::Geometry;
+use cosmic::Theme;
 
 #[derive(Debug)]
 pub struct Meter {
@@ -15,7 +15,14 @@ pub struct Meter {
 impl canvas::Program<crate::app::message::Message, Theme> for Meter {
     type State = ();
 
-    fn draw(&self, _state: &Self::State, renderer: &Renderer, theme: &Theme, bounds: Rectangle, _cursor: Cursor) -> Vec<Geometry<Renderer>> {
+    fn draw(
+        &self,
+        _state: &Self::State,
+        renderer: &Renderer,
+        theme: &Theme,
+        bounds: Rectangle,
+        _cursor: Cursor,
+    ) -> Vec<Geometry<Renderer>> {
         let cosmic = theme.cosmic();
         let mut frame = canvas::Frame::new(renderer, bounds.size());
 
@@ -29,12 +36,15 @@ impl canvas::Program<crate::app::message::Message, Theme> for Meter {
             start_angle: Degrees(-150.).into(),
             end_angle: Degrees(-30.).into(),
         });
-        frame.stroke(&bg_arc.build(), canvas::Stroke {
-            style: canvas::stroke::Style::Solid(cosmic.bg_component_color().into()),
-            width: self.thickness * scale,
-            line_cap: canvas::LineCap::Round,
-            ..Default::default()
-        });
+        frame.stroke(
+            &bg_arc.build(),
+            canvas::Stroke {
+                style: canvas::stroke::Style::Solid(cosmic.bg_component_color().into()),
+                width: self.thickness * scale,
+                line_cap: canvas::LineCap::Round,
+                ..Default::default()
+            },
+        );
 
         let end_angle = self.percentage * 120.;
 
@@ -45,12 +55,15 @@ impl canvas::Program<crate::app::message::Message, Theme> for Meter {
             start_angle: Degrees(-150.).into(),
             end_angle: Degrees(-150. + end_angle).into(),
         });
-        frame.stroke(&arc.build(), canvas::Stroke {
-            style: canvas::stroke::Style::Solid(cosmic.accent_color().into()),
-            width: self.thickness * scale,
-            line_cap: canvas::LineCap::Round,
-            ..Default::default()
-        });
+        frame.stroke(
+            &arc.build(),
+            canvas::Stroke {
+                style: canvas::stroke::Style::Solid(cosmic.accent_color().into()),
+                width: self.thickness * scale,
+                line_cap: canvas::LineCap::Round,
+                ..Default::default()
+            },
+        );
 
         let text = canvas::Text {
             content: format!("{}%", get_percentage(self.percentage)),

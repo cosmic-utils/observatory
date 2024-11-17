@@ -1,4 +1,3 @@
-
 pub struct Statistic {
     pub name: String,
     pub percent: f32,

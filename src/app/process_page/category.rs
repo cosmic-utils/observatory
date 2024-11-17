@@ -1,7 +1,7 @@
-use cosmic::{theme, widget, Element};
+use crate::app::message::Message;
 use cosmic::iced::alignment::{Horizontal, Vertical};
 use cosmic::iced::Length;
-use crate::app::message::Message;
+use cosmic::{theme, widget, Element};
 
 pub struct CategoryList(pub Vec<Category>);
 
@@ -13,7 +13,11 @@ pub enum Sort {
 
 impl Sort {
     pub fn opposite(&mut self) {
-        if *self == Sort::Ascending { *self = Sort::Descending; } else { *self = Sort::Ascending }
+        if *self == Sort::Ascending {
+            *self = Sort::Descending;
+        } else {
+            *self = Sort::Ascending
+        }
     }
 }
 
@@ -28,16 +32,27 @@ pub enum Category {
 
 impl CategoryList {
     pub fn new() -> Self {
-        CategoryList([Category::Name, Category::User, Category::Cpu, Category::Memory, Category::Disk].into())
+        CategoryList(
+            [
+                Category::Name,
+                Category::User,
+                Category::Cpu,
+                Category::Memory,
+                Category::Disk,
+            ]
+            .into(),
+        )
     }
 
     pub fn element(&self, theme: &theme::Theme, sort: &(Category, Sort)) -> Element<Message> {
-        let row = widget::row::with_children(self.0.iter().map(|category| {
-            category.element(&theme, sort)
-        }).collect());
+        let row = widget::row::with_children(
+            self.0
+                .iter()
+                .map(|category| category.element(&theme, sort))
+                .collect(),
+        );
 
-        widget::container(row)
-            .into()
+        widget::container(row).into()
     }
 }
 
@@ -49,9 +64,9 @@ impl Category {
             Category::Cpu => "CPU",
             Category::Memory => "Memory",
             Category::Disk => "Disk",
-        }.into()
+        }
+        .into()
     }
-
 
     pub fn width(&self) -> Length {
         match self {
@@ -101,25 +116,27 @@ impl Category {
             match sort.1 {
                 Sort::Ascending => vec![
                     widget::text::heading(self.name()).into(),
-                    widget::icon::from_name("pan-up-symbolic").into()
+                    widget::icon::from_name("pan-up-symbolic").into(),
                 ],
                 Sort::Descending => vec![
                     widget::text::heading(self.name()).into(),
-                    widget::icon::from_name("pan-down-symbolic").into()
-                ]
+                    widget::icon::from_name("pan-down-symbolic").into(),
+                ],
             }
         } else {
             vec![widget::text::heading(self.name()).into()]
-        }).spacing(cosmic.space_xxs())
-            .align_y(Vertical::Center);
+        })
+        .spacing(cosmic.space_xxs())
+        .align_y(Vertical::Center);
 
-        widget::button::custom(widget::container(header)
-            .padding([cosmic.space_xxs(), cosmic.space_xs()])
-            .width(self.width())
+        widget::button::custom(
+            widget::container(header)
+                .padding([cosmic.space_xxs(), cosmic.space_xs()])
+                .width(self.width()),
         )
-            .padding([0, 0])
-            .on_press(Message::ProcessCategoryClick(self.index()))
-            .class(cosmic::style::Button::HeaderBar)
-            .into()
+        .padding([0, 0])
+        .on_press(Message::ProcessCategoryClick(self.index()))
+        .class(cosmic::style::Button::HeaderBar)
+        .into()
     }
 }

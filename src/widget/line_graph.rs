@@ -46,7 +46,7 @@ impl canvas::Program<crate::app::message::Message, theme::Theme> for LineGraph {
         } else {
             1.0
         };
-        
+
         // Draw rounded square background
         let bg_square =
             path::Path::rounded_rectangle(top_left, scale.into(), cosmic.radius_xs()[0].into());

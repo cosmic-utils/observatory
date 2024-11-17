@@ -3,7 +3,6 @@ use crate::fl;
 use std::collections::VecDeque;
 
 use cosmic::iced_widget::horizontal_rule;
-use cosmic::widget::Space;
 use cosmic::{
     iced::{
         alignment::{Horizontal, Vertical},
@@ -17,11 +16,13 @@ pub struct ResourcePage {
     active_page: TabPage,
     cpu_id: raw_cpuid::CpuId<raw_cpuid::CpuIdReaderNative>,
     cpu_usages: VecDeque<f32>,
+    cores_usages: Vec<VecDeque<f32>>,
     mem_usages: VecDeque<f32>,
     write_disk_usages: VecDeque<f32>,
     read_disk_usages: VecDeque<f32>,
     total_disk_read: u64,
     total_disk_write: u64,
+    multicore_view: bool,
 }
 
 impl ResourcePage {
@@ -37,11 +38,13 @@ impl ResourcePage {
             active_page: TabPage::Cpu,
             cpu_id: raw_cpuid::CpuId::new(),
             cpu_usages: VecDeque::from([0.0; 60]),
+            cores_usages: Vec::new(),
             mem_usages: VecDeque::from([0.0; 60]),
             write_disk_usages: VecDeque::from([0.0; 60]),
             read_disk_usages: VecDeque::from([0.0; 60]),
             total_disk_read: 0,
             total_disk_write: 0,
+            multicore_view: false,
         }
     }
 
@@ -56,6 +59,22 @@ impl ResourcePage {
                 if self.cpu_usages.len() > 60 {
                     self.cpu_usages.pop_front();
                 }
+
+                let cpus = sys.cpus();
+                if self.cores_usages.len() == 0 {
+                    for _ in 0..cpus.len() {
+                        self.cores_usages.push(VecDeque::from([0.0; 60]));
+                    }
+                }
+                if cpus.len() > 0 {
+                    for i in 0..cpus.len() {
+                        self.cores_usages[i].push_back(cpus[i].cpu_usage() / 100.);
+                        if self.cores_usages[i].len() > 60 {
+                            self.cores_usages[i].pop_front();
+                        }
+                    }
+                }
+
                 self.mem_usages.push_back(
                     calc_usage_percentage(sys.used_memory(), sys.total_memory()) as f32 / 100.,
                 );
@@ -83,6 +102,7 @@ impl ResourcePage {
                     self.read_disk_usages.pop_front();
                 }
             }
+            Message::MulticoreView => self.multicore_view = !self.multicore_view,
             _ => {}
         }
     }
@@ -110,17 +130,50 @@ impl ResourcePage {
 
     fn cpu_graph(&self) -> Element<Message> {
         // Usage graph
-        widget::container(
-            widget::canvas(crate::widget::LineGraph {
-                steps: 59,
-                points: self.cpu_usages.clone(),
-                autoscale: false,
-            })
-            .height(Length::Fill)
-            .width(Length::Fill),
-        )
-        .width(Length::Fill)
-        .into()
+        if self.multicore_view {
+            let mut grid = widget::column().width(Length::Fill);
+            let mut row = widget::row().width(Length::Fill).spacing(10.0);
+
+            for (i, usage) in self.cores_usages.iter().enumerate() {
+                row = row.push(
+                    widget::container(
+                        widget::column()
+                            .push(widget::text::text(format!("{} {}", fl!("core"), i)))
+                            .push(
+                                widget::canvas(crate::widget::LineGraph {
+                                    steps: 59,
+                                    points: usage.clone(),
+                                    autoscale: false,
+                                })
+                                .width(Length::Fill),
+                            ),
+                    )
+                    .width(Length::FillPortion(1)),
+                );
+
+                if (i + 1) % 4 == 0 {
+                    grid = grid.push(row);
+                    grid = grid.push(widget::Space::with_height(5));
+                    row = widget::row().width(Length::Fill).spacing(10.0);
+                }
+            }
+
+            grid = grid.push(row);
+
+            widget::scrollable(grid).into()
+        } else {
+            widget::container(
+                widget::canvas(crate::widget::LineGraph {
+                    steps: 59,
+                    points: self.cpu_usages.clone(),
+                    autoscale: false,
+                })
+                .height(Length::Fill)
+                .width(Length::Fill),
+            )
+            .width(Length::Fill)
+            .into()
+        }
     }
 
     fn cpu_info_column(&self, theme: &theme::Theme, sys: &sysinfo::System) -> Element<Message> {
@@ -131,7 +184,7 @@ impl ResourcePage {
             widget::row::with_children(vec![
                 // CPU Utilization
                 widget::column::with_children(vec![
-                    widget::text::heading("Utilization").into(),
+                    widget::text::heading(fl!("utilization")).into(),
                     horizontal_rule(1).into(),
                     widget::text::body(format!("{}%", sys.global_cpu_usage() as u32)).into(),
                 ])
@@ -139,7 +192,7 @@ impl ResourcePage {
                 .into(),
                 // CPU Core Speed Average
                 widget::column::with_children(vec![
-                    widget::text::heading("Speed (Core Avg)").into(),
+                    widget::text::heading(fl!("speed-avg")).into(),
                     horizontal_rule(1).into(),
                     widget::text::body(get_hz(avg)).into(),
                 ])
@@ -197,6 +250,16 @@ impl ResourcePage {
                 widget::text::body(format!("{:0>2}:{:0>2}:{:0>2}", hours, minutes, seconds)).into(),
             ])
             .spacing(cosmic.space_xxxs()),
+        );
+
+        col = col.push(
+            widget::button::suggested(if self.multicore_view {
+                fl!("overview")
+            } else {
+                fl!("core-view")
+            })
+            .on_press(Message::MulticoreView)
+            .width(Length::Fill),
         );
 
         widget::container(

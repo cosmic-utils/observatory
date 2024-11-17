@@ -11,3 +11,12 @@ settings = Settings
 view = View
 menu-settings = Settings
 menu-about = About
+
+# Resources page
+cpu = CPU
+memory = Memory
+disk = Disk
+total-mem = Total memory
+total-swap = Total swap
+mem-utilization = Memory utilization
+swap-utilization = Swap utilizaiton

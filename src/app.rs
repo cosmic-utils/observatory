@@ -5,9 +5,9 @@ pub mod flags;
 mod key_binds;
 mod menu;
 pub mod message;
-mod overview;
+mod overview_page;
 mod process_page;
-mod resources;
+mod resource_page;
 
 use std::any::TypeId;
 use std::collections::HashMap;
@@ -51,7 +51,7 @@ pub struct App {
     context_page: ContextPage,
     sys: sysinfo::System,
     process_page: process_page::ProcessPage,
-    resource_page: resources::ResourcePage,
+    resource_page: resource_page::ResourcePage,
 }
 
 /// Implement [`cosmic::Application`] to integrate with COSMIC.
@@ -118,7 +118,7 @@ impl cosmic::Application for App {
         let mut process_page = process_page::ProcessPage::new(&sys);
         process_page.update_processes(&sys, &apps);
 
-        let resource_page = resources::ResourcePage::new();
+        let resource_page = resource_page::ResourcePage::new();
 
         let (config, handler) = (
             ObservatoryConfig::config(),
@@ -298,7 +298,7 @@ impl cosmic::Application for App {
     fn view(&self) -> Element<Self::Message> {
         if let Some(page) = self.nav_model.active_data::<Page>() {
             match page {
-                Page::Overview => widget::container(overview::overview(&self.sys)).into(),
+                Page::Overview => widget::container(overview_page::overview(&self.sys)).into(),
                 Page::Resources => widget::container(self.resource_page.view(&self.sys)).into(),
                 Page::Processes => widget::container(self.process_page.view()).into(),
             }

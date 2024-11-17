@@ -372,19 +372,19 @@ fn get_hz(hz: u64) -> String {
 }
 
 fn format_size(size: u64) -> String {
-    const KB: u64 = 1000;
-    const MB: u64 = 1000 * KB;
-    const GB: u64 = 1000 * MB;
-    const TB: u64 = 1000 * GB;
+    const KB: u64 = 1024;
+    const MB: u64 = 1024 * KB;
+    const GB: u64 = 1024 * MB;
+    const TB: u64 = 1024 * GB;
 
     if size >= TB {
-        format!("{:.1} TB", size as f64 / TB as f64)
+        format!("{:.1} TiB", size as f64 / TB as f64)
     } else if size >= GB {
-        format!("{:.1} GB", size as f64 / GB as f64)
+        format!("{:.1} GiB", size as f64 / GB as f64)
     } else if size >= MB {
-        format!("{:.1} MB", size as f64 / MB as f64)
+        format!("{:.1} MiB", size as f64 / MB as f64)
     } else if size >= KB {
-        format!("{:.1} KB", size as f64 / KB as f64)
+        format!("{:.1} KiB", size as f64 / KB as f64)
     } else {
         format!("{} B", size)
     }

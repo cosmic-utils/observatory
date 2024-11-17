@@ -5,7 +5,7 @@ use super::context_page::ContextPage;
 #[derive(Clone, Debug, PartialEq)]
 pub enum Message {
     Refresh,
-    KeyPressed(cosmic::iced_core::keyboard::Key),
+    KeyPressed(Key),
 
     ProcessTermActive,
     ProcessKillActive,

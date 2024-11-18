@@ -1,9 +1,9 @@
 use crate::app::message::Message;
+use crate::core::icons;
 use crate::fl;
 use std::collections::VecDeque;
 
 use cosmic::iced_widget::horizontal_rule;
-use cosmic::widget::Space;
 use cosmic::{
     iced::{
         alignment::{Horizontal, Vertical},
@@ -27,9 +27,21 @@ pub struct ResourcePage {
 impl ResourcePage {
     pub fn new() -> Self {
         let mut tab_model = widget::segmented_button::SingleSelectModel::default();
-        tab_model.insert().text(fl!("cpu")).data(TabPage::Cpu);
-        tab_model.insert().text(fl!("memory")).data(TabPage::Memory);
-        tab_model.insert().text(fl!("disk")).data(TabPage::Disk);
+        tab_model
+            .insert()
+            .text(format!(" {}", fl!("cpu")))
+            .data(TabPage::Cpu)
+            .icon(icons::get_icon("processor-symbolic", 18));
+        tab_model
+            .insert()
+            .text(format!(" {}", fl!("memory")))
+            .data(TabPage::Memory)
+            .icon(icons::get_icon("memory-symbolic", 18));
+        tab_model
+            .insert()
+            .text(format!(" {}", fl!("disk")))
+            .data(TabPage::Disk)
+            .icon(icons::get_icon("harddisk-symbolic", 18));
         tab_model.activate_position(0);
 
         Self {

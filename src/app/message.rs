@@ -1,6 +1,6 @@
 use cosmic::iced::keyboard::{Key, Modifiers};
 
-use super::context_page::ContextPage;
+use crate::app::context::ContextPage;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Message {

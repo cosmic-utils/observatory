@@ -67,7 +67,7 @@ impl OverviewPage {
                         )
                         .into(),
                         widget::container(
-                            widget::canvas(crate::widget::Meter {
+                            widget::canvas(crate::widgets::Meter {
                                 percentage: statistic.percent,
                                 thickness: 20.,
                             })

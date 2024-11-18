@@ -65,7 +65,7 @@ impl ProcessPage {
             Message::ProcessClick(pid) => {
                 if self.selected_process == pid {
                     tasks.push(cosmic::app::command::message(cosmic::app::Message::App(
-                        Message::ToggleContextPage(crate::app::ContextPage::ProcInfo),
+                        Message::ToggleContextPage(crate::app::context::ContextPage::ProcInfo),
                     )));
                 } else {
                     self.selected_process = pid;

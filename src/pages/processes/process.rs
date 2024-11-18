@@ -1,5 +1,5 @@
 use crate::app::message::Message;
-use crate::app::process_page::category::{Category, CategoryList};
+use crate::pages::processes::category::{Category, CategoryList};
 use cosmic::iced::{alignment::Vertical, Length};
 use cosmic::{theme, widget, Element};
 

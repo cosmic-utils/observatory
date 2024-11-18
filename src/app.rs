@@ -1,12 +1,9 @@
 mod action;
-mod context_page;
+pub mod bindings;
+pub mod context;
 pub mod flags;
-mod key_binds;
 mod menu;
 pub mod message;
-mod overview_page;
-mod process_page;
-mod resource_page;
 
 use std::any::TypeId;
 use std::collections::HashMap;
@@ -14,8 +11,10 @@ use std::collections::HashMap;
 use crate::core::config::ObservatoryConfig;
 use crate::core::icons;
 use crate::fl;
+use crate::pages::{overview, processes, resources};
 use action::Action;
-use context_page::ContextPage;
+use bindings::key_binds;
+use context::ContextPage;
 use cosmic::app::context_drawer;
 pub use cosmic::app::{Core, Task};
 use cosmic::cosmic_config::{CosmicConfigEntry, Update};
@@ -26,7 +25,6 @@ use cosmic::widget;
 use cosmic::widget::about::About;
 use cosmic::widget::menu::{Action as _, KeyBind};
 pub use cosmic::{executor, ApplicationExt, Element};
-use key_binds::key_binds;
 use message::Message;
 use sysinfo::{ProcessRefreshKind, ProcessesToUpdate};
 
@@ -49,9 +47,9 @@ pub struct App {
     key_binds: HashMap<KeyBind, Action>,
     context_page: ContextPage,
     sys: sysinfo::System,
-    overview_page: overview_page::OverviewPage,
-    process_page: process_page::ProcessPage,
-    resource_page: resource_page::ResourcePage,
+    overview_page: overview::OverviewPage,
+    process_page: processes::ProcessPage,
+    resource_page: resources::ResourcePage,
 }
 
 /// Implement [`cosmic::Application`] to integrate with COSMIC.
@@ -104,12 +102,12 @@ impl cosmic::Application for App {
             ProcessRefreshKind::everything(),
         );
 
-        let mut process_page = process_page::ProcessPage::new(&sys);
+        let mut process_page = processes::ProcessPage::new(&sys);
         process_page.update_processes(&sys);
 
-        let resource_page = resource_page::ResourcePage::new();
+        let resource_page = resources::ResourcePage::new();
 
-        let overview_page = overview_page::OverviewPage::new();
+        let overview_page = overview::OverviewPage::new();
 
         let (config, handler) = (
             ObservatoryConfig::config(),

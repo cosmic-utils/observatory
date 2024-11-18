@@ -27,8 +27,8 @@ write = Write
 utilization = Utilizaiton
 speed-avg = Speed (Core Avg)
 core = Core
-core-view = Core view
-overview = Overview
+multi-core-view = Multi core view
+single-core-view = Single core view
 
 # Processes Page
 proc-info = Process Info

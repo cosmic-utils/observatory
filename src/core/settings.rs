@@ -18,9 +18,9 @@ pub fn init() {
 
 pub fn settings() -> Settings {
     Settings::default()
-        .size(cosmic::iced::Size::new(1024., 720.))
+        .size(cosmic::iced::Size::new(1120., 720.))
         .size_limits(cosmic::iced::Limits::new(
-            cosmic::iced::Size::new(800., 600.),
+            cosmic::iced::Size::new(1120., 600.),
             cosmic::iced::Size::INFINITY,
         ))
         .debug(false)

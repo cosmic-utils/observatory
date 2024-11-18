@@ -1105,15 +1105,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cpu-freq"
-version = "0.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "39ceca04fadb699a10e243450cd3e74149cf79cd5c4f5dca4698f9381cf039c6"
-dependencies = [
- "num_cpus",
-]
-
-[[package]]
 name = "cpufeatures"
 version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1844,16 +1835,6 @@ dependencies = [
  "rust-ini",
  "thiserror",
  "xdg",
-]
-
-[[package]]
-name = "freedesktop_entry_parser"
-version = "1.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "db9c27b72f19a99a895f8ca89e2d26e4ef31013376e56fdafef697627306c3e4"
-dependencies = [
- "nom",
- "thiserror",
 ]
 
 [[package]]
@@ -3248,12 +3229,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6877bb514081ee2a7ff5ef9de3281f14a4dd4bceac4c09388074a6b5df8a139a"
 
 [[package]]
-name = "minimal-lexical"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
-
-[[package]]
 name = "miniz_oxide"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3376,16 +3351,6 @@ dependencies = [
  "cfg_aliases 0.2.1",
  "libc",
  "memoffset 0.9.1",
-]
-
-[[package]]
-name = "nom"
-version = "7.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d273983c5a657a70a3e8f2a01329822f3b8c8172b73826411a55751e404a0a4a"
-dependencies = [
- "memchr",
- "minimal-lexical",
 ]
 
 [[package]]
@@ -3766,9 +3731,7 @@ dependencies = [
 name = "observatory"
 version = "0.1.0"
 dependencies = [
- "cpu-freq",
  "env_logger",
- "freedesktop_entry_parser",
  "i18n-embed",
  "i18n-embed-fl",
  "libcosmic",

@@ -10,38 +10,49 @@ use cosmic::{
 
 use crate::app::message::Message;
 use category::{Category, CategoryList, Sort};
-use process::Process;
 
 pub struct ProcessPage {
     sort_data: (Category, Sort),
     users: sysinfo::Users,
-    active_uid: sysinfo::Uid,
     categories: CategoryList,
-    processes: Vec<Process>,
+    processes: process::ProcessList,
     selected_process: Option<sysinfo::Pid>,
     apps: Vec<cosmic::desktop::DesktopEntryData>,
 }
 
 impl ProcessPage {
     pub fn new(sys: &sysinfo::System) -> Self {
+        let users = sysinfo::Users::new_with_refreshed_list();
+        let categories = CategoryList::new();
+        let apps = cosmic::desktop::load_applications(None, true);
+        let processes = process::ProcessList::new(&categories, sys, &apps, &users);
         Self {
             sort_data: (Category::Name, Sort::Descending),
-            users: sysinfo::Users::new_with_refreshed_list(),
-            active_uid: sys
-                .process(sysinfo::get_current_pid().unwrap())
-                .unwrap()
-                .user_id()
-                .unwrap()
-                .clone(),
-            categories: CategoryList::new(),
-            processes: Vec::new(),
+            users,
+            categories,
+            processes,
             selected_process: None,
-            apps: cosmic::desktop::load_applications(None, true),
+            apps,
         }
     }
 
-    pub fn proc_info(&self) -> Element<Message> {
-        widget::text::heading(format!("PID: {}", self.selected_process.unwrap())).into()
+    pub fn proc_info(&self, sys: &sysinfo::System) -> Element<Message> {
+        widget::column::with_children(vec![
+            widget::text::heading(format!(
+                "PID: {}",
+                sys.process(self.selected_process.unwrap()).unwrap().pid()
+            ))
+            .into(),
+            widget::text::heading(format!(
+                "Parent PID: {}",
+                sys.process(self.selected_process.unwrap())
+                    .unwrap()
+                    .parent()
+                    .unwrap()
+            ))
+            .into(),
+        ])
+        .into()
     }
 
     pub fn update(
@@ -78,7 +89,6 @@ impl ProcessPage {
                 } else {
                     self.sort_data = (cat, Sort::Descending);
                 }
-                self.sort_processes();
             }
             Message::Refresh => {
                 self.update_processes(sys);
@@ -96,23 +106,18 @@ impl ProcessPage {
 
     pub fn view(&self) -> Element<Message> {
         let theme = cosmic::theme::active();
-        let cosmic = theme.cosmic();
 
         // The vertical column of process elements
         let col = widget::column::with_children(vec![
             self.categories.element(&theme, &self.sort_data),
-            iced_widget::horizontal_rule(1).into(),
-        ])
-        .width(Length::Fixed(700.));
+            iced_widget::horizontal_rule(1)
+                .width(Length::Fixed(800.))
+                .into(),
+        ]);
 
-        let mut process_column =
-            widget::column()
-                .spacing(cosmic.space_xxxs())
-                .padding([0, cosmic.space_xxs(), 0, 0]);
-        for process in &self.processes {
-            process_column = process_column
-                .push(process.element(&theme, self.selected_process == Some(process.pid)));
-        }
+        let process_column =
+            self.processes
+                .element(&theme, &self.selected_process, &self.sort_data);
         // Push process rows into scrollable widget
         let process_group_scroll = widget::context_menu(
             iced_widget::Scrollable::with_direction(
@@ -125,15 +130,10 @@ impl ProcessPage {
             ContextMenuAction::menu(),
         );
 
-        iced_widget::Scrollable::with_direction(
-            col.push(process_group_scroll),
-            iced_widget::scrollable::Direction::Horizontal(
-                iced_widget::scrollable::Scrollbar::default(),
-            ),
-        )
-        .width(Length::Fill)
-        .height(Length::Fill)
-        .into()
+        col.push(process_group_scroll)
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .into()
     }
 
     pub fn footer(&self) -> Option<Element<Message>> {
@@ -163,25 +163,8 @@ impl ProcessPage {
     }
 
     pub fn update_processes(&mut self, sys: &sysinfo::System) {
-        self.processes = sys
-            .processes()
-            .values()
-            .filter(|process| {
-                process.thread_kind().is_none() && process.user_id() == Some(&self.active_uid)
-            })
-            .map(|process| {
-                Process::from_process(&self.categories, process, &self.apps, sys, &self.users)
-            })
-            .collect();
-
-        self.sort_processes();
-    }
-
-    fn sort_processes(&mut self) {
-        self.processes.sort_by(|a, b| match self.sort_data.1 {
-            Sort::Ascending => Process::compare(a, b, &self.sort_data.0),
-            Sort::Descending => Process::compare(b, a, &self.sort_data.0),
-        })
+        self.processes
+            .update(&self.categories, sys, &self.apps, &self.users);
     }
 }
 

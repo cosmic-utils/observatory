@@ -168,10 +168,11 @@ impl cosmic::Application for App {
                 context_drawer::context_drawer(self.settings(), Message::ContextClose)
                     .title(self.context_page.title())
             }
-            ContextPage::ProcInfo => {
-                context_drawer::context_drawer(self.process_page.proc_info(), Message::ContextClose)
-                    .title(self.context_page.title())
-            }
+            ContextPage::ProcInfo => context_drawer::context_drawer(
+                self.process_page.proc_info(&self.sys),
+                Message::ContextClose,
+            )
+            .title(self.context_page.title()),
         })
     }
 

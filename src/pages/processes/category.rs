@@ -24,6 +24,7 @@ impl Sort {
 #[derive(PartialEq, Clone, Copy, Debug)]
 pub enum Category {
     Name,
+    Pid,
     User,
     Cpu,
     Memory,
@@ -35,6 +36,7 @@ impl CategoryList {
         CategoryList(
             [
                 Category::Name,
+                Category::Pid,
                 Category::User,
                 Category::Cpu,
                 Category::Memory,
@@ -60,6 +62,7 @@ impl Category {
     pub fn name(&self) -> String {
         match self {
             Category::Name => "Name",
+            Category::Pid => "Pid",
             Category::User => "User",
             Category::Cpu => "CPU",
             Category::Memory => "Memory",
@@ -71,6 +74,7 @@ impl Category {
     pub fn width(&self) -> Length {
         match self {
             Category::Name => Length::Fixed(300.),
+            Category::Pid => Length::Fixed(66.),
             Category::User => Length::Fixed(80.),
             Category::Cpu => Length::Fixed(70.),
             Category::Memory => Length::Fixed(100.),
@@ -81,6 +85,7 @@ impl Category {
     pub fn alignment(&self) -> Horizontal {
         match self {
             Category::Name => Horizontal::Left,
+            Category::Pid => Horizontal::Left,
             Category::User => Horizontal::Left,
             Category::Cpu => Horizontal::Right,
             Category::Memory => Horizontal::Right,
@@ -91,20 +96,22 @@ impl Category {
     pub fn index(&self) -> u8 {
         match self {
             Category::Name => 0,
-            Category::User => 1,
-            Category::Cpu => 2,
-            Category::Memory => 3,
-            Category::Disk => 4,
+            Category::Pid => 1,
+            Category::User => 2,
+            Category::Cpu => 3,
+            Category::Memory => 4,
+            Category::Disk => 5,
         }
     }
 
     pub fn from_index(index: u8) -> Category {
         match index {
             0 => Category::Name,
-            1 => Category::User,
-            2 => Category::Cpu,
-            3 => Category::Memory,
-            4 => Category::Disk,
+            1 => Category::Pid,
+            2 => Category::User,
+            3 => Category::Cpu,
+            4 => Category::Memory,
+            5 => Category::Disk,
             _ => unreachable!(),
         }
     }

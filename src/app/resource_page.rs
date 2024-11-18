@@ -1,7 +1,7 @@
 use crate::app::message::Message;
 use crate::core::icons;
 use crate::fl;
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 
 use cosmic::iced_widget::horizontal_rule;
 use cosmic::{
@@ -11,6 +11,8 @@ use cosmic::{
     },
     iced_widget, theme, widget, Element,
 };
+
+use super::menu;
 
 pub struct ResourcePage {
     tab_model: widget::segmented_button::SingleSelectModel,
@@ -24,6 +26,20 @@ pub struct ResourcePage {
     total_disk_read: u64,
     total_disk_write: u64,
     multicore_view: bool,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ContextMenuAction {
+    MulticoreView(bool),
+}
+
+impl widget::menu::Action for ContextMenuAction {
+    type Message = Message;
+    fn message(&self) -> Self::Message {
+        match self {
+            ContextMenuAction::MulticoreView(visible) => Message::MulticoreView(visible.clone()),
+        }
+    }
 }
 
 impl ResourcePage {
@@ -145,7 +161,7 @@ impl ResourcePage {
 
     fn cpu_graph(&self) -> Element<Message> {
         // Usage graph
-        if self.multicore_view {
+        let element = if self.multicore_view {
             let mut grid = widget::column().width(Length::Fill);
             let mut row = widget::row().width(Length::Fill).spacing(10.0);
 
@@ -175,7 +191,7 @@ impl ResourcePage {
 
             grid = grid.push(row);
 
-            widget::scrollable(grid).into()
+            widget::container(widget::scrollable(grid)).width(Length::Fill)
         } else {
             widget::container(
                 widget::canvas(crate::widget::LineGraph {
@@ -187,8 +203,26 @@ impl ResourcePage {
                 .width(Length::Fill),
             )
             .width(Length::Fill)
-            .into()
-        }
+        };
+
+        let widget = cosmic::widget::context_menu(element, self.context_menu());
+        widget.into()
+    }
+
+    fn context_menu(&self) -> Option<Vec<cosmic::widget::menu::Tree<Message>>> {
+        Some(cosmic::widget::menu::items(
+            &HashMap::new(),
+            vec![
+                cosmic::widget::menu::Item::Button(
+                    fl!("core-view"),
+                    ContextMenuAction::MulticoreView(true),
+                ),
+                cosmic::widget::menu::Item::Button(
+                    fl!("overview"),
+                    ContextMenuAction::MulticoreView(false),
+                ),
+            ],
+        ))
     }
 
     fn cpu_info_column(&self, theme: &theme::Theme, sys: &sysinfo::System) -> Element<Message> {
@@ -265,11 +299,6 @@ impl ResourcePage {
                 widget::text::body(format!("{:0>2}:{:0>2}:{:0>2}", hours, minutes, seconds)).into(),
             ])
             .spacing(cosmic.space_xxxs()),
-        );
-
-        col = col.push(
-            widget::checkbox(fl!("core-view"), self.multicore_view)
-                .on_toggle(Message::MulticoreView),
         );
 
         widget::container(

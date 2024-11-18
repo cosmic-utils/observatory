@@ -30,6 +30,5 @@ core = Core
 core-view = Core view
 overview = Overview
 
-
 # Processes Page
 proc-info = Process Info

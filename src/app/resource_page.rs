@@ -115,7 +115,9 @@ impl ResourcePage {
                     self.read_disk_usages.pop_front();
                 }
             }
-            Message::MulticoreView => self.multicore_view = !self.multicore_view,
+            Message::MulticoreView(checked) => {
+                self.multicore_view = checked;
+            }
             _ => {}
         }
     }
@@ -266,13 +268,8 @@ impl ResourcePage {
         );
 
         col = col.push(
-            widget::button::suggested(if self.multicore_view {
-                fl!("overview")
-            } else {
-                fl!("core-view")
-            })
-            .on_press(Message::MulticoreView)
-            .width(Length::Fill),
+            widget::checkbox(fl!("core-view"), self.multicore_view)
+                .on_toggle(Message::MulticoreView),
         );
 
         widget::container(

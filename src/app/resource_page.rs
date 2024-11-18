@@ -217,7 +217,7 @@ impl ResourcePage {
                     ContextMenuAction::MulticoreView(true),
                 ),
                 cosmic::widget::menu::Item::Button(
-                    fl!("overview"),
+                    fl!("single-core-view"),
                     ContextMenuAction::MulticoreView(false),
                 ),
             ],

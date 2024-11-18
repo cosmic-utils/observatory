@@ -51,7 +51,7 @@ impl OverviewPage {
         }
     }
 
-    pub fn view(&self, _sys: &sysinfo::System) -> Element<Message> {
+    pub fn view(&self) -> Element<Message> {
         let theme = theme::active();
         let cosmic = theme.cosmic();
 

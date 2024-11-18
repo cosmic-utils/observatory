@@ -2,7 +2,8 @@ use core::settings;
 
 mod app;
 mod core;
-mod widget;
+mod pages;
+mod widgets;
 
 fn main() -> cosmic::iced::Result {
     settings::init();

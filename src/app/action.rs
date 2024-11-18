@@ -1,7 +1,7 @@
 use cosmic::widget::menu::Action as MenuAction;
 
-use super::context_page::ContextPage;
 use super::Message;
+use crate::app::ContextPage;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Action {

@@ -12,7 +12,6 @@ use cosmic::{
     iced_widget, theme, widget, Element,
 };
 
-
 pub struct ResourcePage {
     tab_model: widget::segmented_button::SingleSelectModel,
     active_page: TabPage,
@@ -170,7 +169,7 @@ impl ResourcePage {
                         widget::column()
                             .push(widget::text::text(format!("{} {}", fl!("core"), i)))
                             .push(
-                                widget::canvas(crate::widget::LineGraph {
+                                widget::canvas(crate::widgets::LineGraph {
                                     steps: 59,
                                     points: usage.clone(),
                                     autoscale: false,
@@ -193,7 +192,7 @@ impl ResourcePage {
             widget::container(widget::scrollable(grid)).width(Length::Fill)
         } else {
             widget::container(
-                widget::canvas(crate::widget::LineGraph {
+                widget::canvas(crate::widgets::LineGraph {
                     steps: 59,
                     points: self.cpu_usages.clone(),
                     autoscale: false,
@@ -419,7 +418,7 @@ impl ResourcePage {
     fn mem_graph(&self) -> Element<Message> {
         // Usage graph
         widget::container(
-            widget::canvas(crate::widget::line_graph::LineGraph {
+            widget::canvas(crate::widgets::line_graph::LineGraph {
                 steps: 59,
                 points: self.mem_usages.clone(),
                 autoscale: false,
@@ -569,7 +568,7 @@ impl ResourcePage {
     fn write_disk_graph(&self) -> Element<Message> {
         // Usage graph
         widget::container(
-            widget::canvas(crate::widget::line_graph::LineGraph {
+            widget::canvas(crate::widgets::line_graph::LineGraph {
                 steps: 59,
                 points: self.write_disk_usages.clone(),
                 autoscale: true,
@@ -584,7 +583,7 @@ impl ResourcePage {
     fn read_disk_graph(&self) -> Element<Message> {
         // Usage graph
         widget::container(
-            widget::canvas(crate::widget::line_graph::LineGraph {
+            widget::canvas(crate::widgets::line_graph::LineGraph {
                 steps: 59,
                 points: self.read_disk_usages.clone(),
                 autoscale: true,

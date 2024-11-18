@@ -13,6 +13,7 @@ use std::any::TypeId;
 use std::collections::HashMap;
 
 use crate::core::config::ObservatoryConfig;
+use crate::core::icons;
 use crate::fl;
 use action::Action;
 use context_page::ContextPage;
@@ -80,9 +81,21 @@ impl cosmic::Application for App {
     /// Creates the application, and optionally emits command on initialize.
     fn init(core: Core, _input: Self::Flags) -> (Self, Task<Self::Message>) {
         let mut nav_model = widget::nav_bar::Model::default();
-        nav_model.insert().text("Overview").data(Page::Overview);
-        nav_model.insert().text("Resources").data(Page::Resources);
-        nav_model.insert().text("Processes").data(Page::Processes);
+        nav_model
+            .insert()
+            .text("Overview")
+            .icon(icons::get_icon("user-home-symbolic", 18))
+            .data(Page::Overview);
+        nav_model
+            .insert()
+            .text("Resources")
+            .icon(icons::get_icon("speedometer-symbolic", 18))
+            .data(Page::Resources);
+        nav_model
+            .insert()
+            .text("Processes")
+            .icon(icons::get_icon("view-list-symbolic", 18))
+            .data(Page::Processes);
         nav_model.activate_position(0);
 
         let apps = applications::Application::scan_all();

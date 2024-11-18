@@ -11,6 +11,7 @@ pub enum Message {
     ProcessKillActive,
     ProcessClick(Option<sysinfo::Pid>),
     ProcessCategoryClick(u8),
+    MulticoreView(bool),
 
     ResourceTabSelected(cosmic::widget::segmented_button::Entity),
 

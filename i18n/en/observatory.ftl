@@ -24,6 +24,11 @@ total-read = Total read
 total-write = Total write
 read = Read
 write = Write
+utilization = Utilizaiton
+speed-avg = Speed (Core Avg)
+core = Core
+multi-core-view = Multi core view
+single-core-view = Single core view
 
 # Processes Page
 proc-info = Process Info

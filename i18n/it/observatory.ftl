@@ -24,3 +24,6 @@ total-read = Totale lettura
 total-write = Totale scrittura
 read = Lettura
 write = Scrittura
+utilization = Utilizzo
+speed-avg = Velocita media
+core = Core

@@ -8,7 +8,6 @@ use cosmic::{
     widget, Element,
 };
 
-use crate::app::applications::Application;
 use crate::app::message::Message;
 use category::{Category, CategoryList, Sort};
 use process::Process;
@@ -20,6 +19,7 @@ pub struct ProcessPage {
     categories: CategoryList,
     processes: Vec<Process>,
     selected_process: Option<sysinfo::Pid>,
+    apps: Vec<cosmic::desktop::DesktopEntryData>,
 }
 
 impl ProcessPage {
@@ -33,13 +33,23 @@ impl ProcessPage {
                 .user_id()
                 .unwrap()
                 .clone(),
-            categories: category::CategoryList::new(),
-            processes: vec![],
+            categories: CategoryList::new(),
+            processes: Vec::new(),
             selected_process: None,
+            apps: cosmic::desktop::load_applications(None, true),
         }
     }
 
-    pub fn update(&mut self, sys: &sysinfo::System, message: Message, apps: &Vec<Application>) {
+    pub fn proc_info(&self) -> Element<Message> {
+        widget::text::heading(format!("PID: {}", self.selected_process.unwrap())).into()
+    }
+
+    pub fn update(
+        &mut self,
+        sys: &sysinfo::System,
+        message: Message,
+    ) -> cosmic::app::Task<Message> {
+        let mut tasks = vec![];
         match message {
             Message::ProcessTermActive => {
                 sys.process(self.selected_process.unwrap())
@@ -52,7 +62,15 @@ impl ProcessPage {
                 sys.process(self.selected_process.unwrap()).unwrap().kill();
                 self.selected_process = None;
             }
-            Message::ProcessClick(pid) => self.selected_process = pid,
+            Message::ProcessClick(pid) => {
+                if self.selected_process == pid {
+                    tasks.push(cosmic::app::command::message(cosmic::app::Message::App(
+                        Message::ToggleContextPage(crate::app::ContextPage::ProcInfo),
+                    )));
+                } else {
+                    self.selected_process = pid;
+                }
+            }
             Message::ProcessCategoryClick(index) => {
                 let cat = Category::from_index(index);
                 if cat == self.sort_data.0 {
@@ -63,7 +81,7 @@ impl ProcessPage {
                 self.sort_processes();
             }
             Message::Refresh => {
-                self.update_processes(sys, apps);
+                self.update_processes(sys);
             }
             Message::KeyPressed(key) => {
                 if key == iced::keyboard::Key::Named(iced::keyboard::key::Named::Escape) {
@@ -72,6 +90,8 @@ impl ProcessPage {
             }
             _ => {}
         };
+
+        cosmic::Task::batch(tasks)
     }
 
     pub fn view(&self) -> Element<Message> {
@@ -142,14 +162,16 @@ impl ProcessPage {
         )
     }
 
-    pub fn update_processes(&mut self, sys: &sysinfo::System, apps: &Vec<Application>) {
+    pub fn update_processes(&mut self, sys: &sysinfo::System) {
         self.processes = sys
             .processes()
             .values()
             .filter(|process| {
                 process.thread_kind().is_none() && process.user_id() == Some(&self.active_uid)
             })
-            .map(|process| Process::from_process(&self.categories, process, apps, sys, &self.users))
+            .map(|process| {
+                Process::from_process(&self.categories, process, &self.apps, sys, &self.users)
+            })
             .collect();
 
         self.sort_processes();

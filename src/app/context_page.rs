@@ -4,6 +4,7 @@ use crate::fl;
 pub enum ContextPage {
     About,
     Settings,
+    ProcInfo,
 }
 
 impl ContextPage {
@@ -11,6 +12,7 @@ impl ContextPage {
         match self {
             ContextPage::About => fl!("about"),
             ContextPage::Settings => fl!("settings"),
+            ContextPage::ProcInfo => fl!("proc-info"),
         }
     }
 }

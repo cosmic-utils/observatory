@@ -1,5 +1,4 @@
 mod action;
-pub mod applications;
 mod context_page;
 pub mod flags;
 mod key_binds;
@@ -13,6 +12,7 @@ use std::any::TypeId;
 use std::collections::HashMap;
 
 use crate::core::config::ObservatoryConfig;
+use crate::core::icons;
 use crate::fl;
 use action::Action;
 use context_page::ContextPage;
@@ -42,7 +42,6 @@ pub struct App {
     core: Core,
     nav_model: widget::nav_bar::Model,
     about: About,
-    apps: Vec<applications::Application>,
     handler: Option<cosmic::cosmic_config::Config>,
     config: ObservatoryConfig,
     app_themes: Vec<String>,
@@ -80,12 +79,22 @@ impl cosmic::Application for App {
     /// Creates the application, and optionally emits command on initialize.
     fn init(core: Core, _input: Self::Flags) -> (Self, Task<Self::Message>) {
         let mut nav_model = widget::nav_bar::Model::default();
-        nav_model.insert().text("Overview").data(Page::Overview);
-        nav_model.insert().text("Resources").data(Page::Resources);
-        nav_model.insert().text("Processes").data(Page::Processes);
+        nav_model
+            .insert()
+            .text("Overview")
+            .icon(icons::get_icon("user-home-symbolic", 18))
+            .data(Page::Overview);
+        nav_model
+            .insert()
+            .text("Resources")
+            .icon(icons::get_icon("speedometer-symbolic", 18))
+            .data(Page::Resources);
+        nav_model
+            .insert()
+            .text("Processes")
+            .icon(icons::get_icon("view-list-symbolic", 18))
+            .data(Page::Processes);
         nav_model.activate_position(0);
-
-        let apps = applications::Application::scan_all();
 
         let mut sys = sysinfo::System::new_all();
         std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
@@ -96,7 +105,7 @@ impl cosmic::Application for App {
         );
 
         let mut process_page = process_page::ProcessPage::new(&sys);
-        process_page.update_processes(&sys, &apps);
+        process_page.update_processes(&sys);
 
         let resource_page = resource_page::ResourcePage::new();
 
@@ -137,7 +146,6 @@ impl cosmic::Application for App {
             modifiers: Modifiers::empty(),
             key_binds: key_binds(),
             context_page: ContextPage::Settings,
-            apps,
             sys,
             overview_page,
             process_page,
@@ -160,6 +168,10 @@ impl cosmic::Application for App {
             }
             ContextPage::Settings => {
                 context_drawer::context_drawer(self.settings(), Message::ContextClose)
+                    .title(self.context_page.title())
+            }
+            ContextPage::ProcInfo => {
+                context_drawer::context_drawer(self.process_page.proc_info(), Message::ContextClose)
                     .title(self.context_page.title())
             }
         })
@@ -290,8 +302,7 @@ impl cosmic::Application for App {
             }
             _ => (),
         }
-        self.process_page
-            .update(&self.sys, message.clone(), &self.apps);
+        tasks.push(self.process_page.update(&self.sys, message.clone()));
         self.resource_page.update(&self.sys, message.clone());
         self.overview_page.update(&self.sys, message.clone());
 
@@ -302,7 +313,7 @@ impl cosmic::Application for App {
     fn view(&self) -> Element<Self::Message> {
         if let Some(page) = self.nav_model.active_data::<Page>() {
             match page {
-                Page::Overview => widget::container(self.overview_page.view(&self.sys)).into(),
+                Page::Overview => widget::container(self.overview_page.view()).into(),
                 Page::Resources => widget::container(self.resource_page.view(&self.sys)).into(),
                 Page::Processes => widget::container(self.process_page.view()).into(),
             }

@@ -213,7 +213,7 @@ impl ResourcePage {
             &HashMap::new(),
             vec![
                 cosmic::widget::menu::Item::Button(
-                    fl!("core-view"),
+                    fl!("multi-core-view"),
                     ContextMenuAction::MulticoreView(true),
                 ),
                 cosmic::widget::menu::Item::Button(

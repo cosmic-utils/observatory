@@ -1,17 +1,14 @@
-use crate::app::applications::Application;
 use crate::app::message::Message;
 use crate::app::process_page::category::{Category, CategoryList};
 use cosmic::iced::{alignment::Vertical, Length};
 use cosmic::{theme, widget, Element};
 
-#[derive(Clone, Debug)]
 struct DataPoint {
-    icon_name: Option<String>,
-    data: String,
+    icon: Option<cosmic::desktop::IconSource>,
+    content: String,
     category: Category,
 }
 
-#[derive(Clone, Debug)]
 pub struct Process {
     data_points: Vec<DataPoint>,
     cpu_percent: f32,
@@ -24,7 +21,7 @@ impl Process {
     pub fn from_process(
         categories: &CategoryList,
         process: &sysinfo::Process,
-        apps: &Vec<Application>,
+        apps: &Vec<cosmic::desktop::DesktopEntryData>,
         sys: &sysinfo::System,
         users: &sysinfo::Users,
     ) -> Self {
@@ -47,11 +44,11 @@ impl Process {
         match cat {
             Category::Name => {
                 let mut ord = b.data_points[Category::Name.index() as usize]
-                    .data
+                    .content
                     .to_ascii_lowercase()
                     .cmp(
                         &a.data_points[Category::Name.index() as usize]
-                            .data
+                            .content
                             .to_ascii_lowercase(),
                     );
                 if ord == std::cmp::Ordering::Equal {
@@ -61,8 +58,8 @@ impl Process {
             }
             Category::User => {
                 let mut ord = a.data_points[Category::User.index() as usize]
-                    .data
-                    .cmp(&b.data_points[Category::User.index() as usize].data);
+                    .content
+                    .cmp(&b.data_points[Category::User.index() as usize].content);
                 if ord == std::cmp::Ordering::Equal {
                     ord = Self::compare(a, b, &Category::Name);
                 }
@@ -98,6 +95,32 @@ impl Process {
         name.into()
     }
 
+    fn get_icon(
+        process: &sysinfo::Process,
+        apps: &Vec<cosmic::desktop::DesktopEntryData>,
+    ) -> cosmic::desktop::IconSource {
+        let cmd = process.cmd();
+        let mut icon = cosmic::desktop::IconSource::default();
+
+        for app in apps {
+            let exec = app.exec.clone().unwrap_or_default();
+            let mut exec = shlex::Shlex::new(exec.as_ref());
+
+            let executable = match exec.next() {
+                Some(executable) if !executable.contains('=') => executable,
+                _ => "NoExec".into(),
+            };
+
+            let no_cmd = "NoCmd".into();
+            let cmd_start = cmd.iter().nth(0).unwrap_or(&no_cmd).to_string_lossy();
+            if cmd_start == executable {
+                icon = app.icon.clone();
+            }
+        }
+
+        icon
+    }
+
     pub fn element(&self, theme: &cosmic::Theme, is_selected: bool) -> Element<Message> {
         let row = widget::row::with_children::<Message>(
             self.data_points
@@ -123,53 +146,42 @@ impl DataPoint {
     fn new(
         category: Category,
         process: &sysinfo::Process,
-        apps: &Vec<Application>,
+        apps: &Vec<cosmic::desktop::DesktopEntryData>,
         sys: &sysinfo::System,
         users: &sysinfo::Users,
     ) -> Self {
         match category {
             Category::Name => {
-                let icon_name = Some(
-                    match apps.iter().find(|app| {
-                        if let Some(cmd) = process.cmd().iter().nth(0) {
-                            app.cmd() == cmd
-                        } else {
-                            false
-                        }
-                    }) {
-                        Some(app) => app.icon().into(),
-                        None => "application-default-symbolic".into(),
-                    },
-                );
-                let data = Process::get_name(process);
+                let icon = Some(Process::get_icon(process, apps));
+                let content = Process::get_name(process);
                 DataPoint {
-                    icon_name,
-                    data,
+                    icon,
+                    content,
                     category,
                 }
             }
             Category::User => {
-                let user = users
+                let content = users
                     .get_user_by_id(process.user_id().unwrap())
                     .unwrap()
                     .name()
                     .into();
                 DataPoint {
-                    icon_name: None,
-                    data: user,
+                    icon: None,
+                    content,
                     category,
                 }
             }
             Category::Cpu => {
-                let data = format!("{:.1}%", process.cpu_usage() / sys.cpus().len() as f32);
+                let content = format!("{:.1}%", process.cpu_usage() / sys.cpus().len() as f32);
                 DataPoint {
-                    icon_name: None,
-                    data,
+                    icon: None,
+                    content,
                     category,
                 }
             }
             Category::Memory => {
-                let data = {
+                let content = {
                     let bytes = process.memory();
                     if bytes < 1024u64.pow(1) {
                         format!("{} B", bytes)
@@ -182,13 +194,13 @@ impl DataPoint {
                     }
                 };
                 DataPoint {
-                    icon_name: None,
-                    data,
+                    icon: None,
+                    content,
                     category,
                 }
             }
             Category::Disk => {
-                let data = {
+                let content = {
                     let bytes =
                         process.disk_usage().read_bytes + process.disk_usage().written_bytes;
                     let kibibytes = bytes as f64 / 1024.;
@@ -205,8 +217,8 @@ impl DataPoint {
                     }
                 };
                 DataPoint {
-                    icon_name: None,
-                    data,
+                    icon: None,
+                    content,
                     category,
                 }
             }
@@ -216,12 +228,12 @@ impl DataPoint {
     fn element(&self, theme: &theme::Theme) -> Element<Message> {
         let cosmic = theme.cosmic();
 
-        let data_row = widget::row::with_children(match &self.icon_name {
-            Some(icon_name) => vec![
-                widget::icon::from_name(icon_name.as_str()).into(),
-                widget::text::body(&self.data).into(),
+        let data_row = widget::row::with_children(match &self.icon {
+            Some(icon) => vec![
+                icon.as_cosmic_icon().size(24).into(),
+                widget::text::body(&self.content).into(),
             ],
-            None => vec![widget::text::body(&self.data).into()],
+            None => vec![widget::text::body(&self.content).into()],
         })
         .spacing(cosmic.space_xxs())
         .align_y(Vertical::Center);

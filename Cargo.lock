@@ -3777,6 +3777,7 @@ dependencies = [
  "raw-cpuid",
  "rust-embed",
  "serde",
+ "shlex",
  "sysinfo",
 ]
 

@@ -24,3 +24,6 @@ total-read = Total read
 total-write = Total write
 read = Read
 write = Write
+
+# Processes Page
+proc-info = Process Info

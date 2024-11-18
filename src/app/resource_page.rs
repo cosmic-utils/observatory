@@ -3,7 +3,6 @@ use crate::fl;
 use std::collections::VecDeque;
 
 use cosmic::iced_widget::horizontal_rule;
-use cosmic::widget::Space;
 use cosmic::{
     iced::{
         alignment::{Horizontal, Vertical},

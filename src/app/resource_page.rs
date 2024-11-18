@@ -12,7 +12,6 @@ use cosmic::{
     iced_widget, theme, widget, Element,
 };
 
-use super::menu;
 
 pub struct ResourcePage {
     tab_model: widget::segmented_button::SingleSelectModel,

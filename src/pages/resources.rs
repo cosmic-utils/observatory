@@ -213,10 +213,12 @@ impl ResourcePage {
             vec![
                 cosmic::widget::menu::Item::Button(
                     fl!("multi-core-view"),
+                    None,
                     ContextMenuAction::MulticoreView(true),
                 ),
                 cosmic::widget::menu::Item::Button(
                     fl!("single-core-view"),
+                    None,
                     ContextMenuAction::MulticoreView(false),
                 ),
             ],

@@ -179,9 +179,9 @@ impl ContextMenuAction {
         Some(widget::menu::items(
             &std::collections::HashMap::new(),
             vec![
-                widget::menu::Item::Button("Terminate", ContextMenuAction::Term),
+                widget::menu::Item::Button("Terminate", None, ContextMenuAction::Term),
                 widget::menu::Item::Divider,
-                widget::menu::Item::Button("Kill", ContextMenuAction::Kill),
+                widget::menu::Item::Button("Kill", None, ContextMenuAction::Kill),
             ],
         ))
     }

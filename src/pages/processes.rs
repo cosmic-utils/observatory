@@ -1,15 +1,16 @@
 mod category;
 mod process;
 
-use cosmic::iced;
+use crate::app::message::Message;
+use category::{Category, CategoryList, Sort};
 use cosmic::iced_widget;
+use cosmic::{iced, Task};
 use cosmic::{
     iced::{alignment::Vertical, Length},
     widget, Element,
 };
 
-use crate::app::message::Message;
-use category::{Category, CategoryList, Sort};
+pub use super::Page;
 
 pub struct ProcessPage {
     sort_data: (Category, Sort),
@@ -20,46 +21,12 @@ pub struct ProcessPage {
     apps: Vec<cosmic::desktop::DesktopEntryData>,
 }
 
-impl ProcessPage {
-    pub fn new(sys: &sysinfo::System) -> Self {
-        let users = sysinfo::Users::new_with_refreshed_list();
-        let categories = CategoryList::new();
-        let apps = cosmic::desktop::load_applications(None, true);
-        let processes = process::ProcessList::new(&categories, sys, &apps, &users);
-        Self {
-            sort_data: (Category::Name, Sort::Descending),
-            users,
-            categories,
-            processes,
-            selected_process: None,
-            apps,
-        }
-    }
-
-    pub fn proc_info(&self, sys: &sysinfo::System) -> Element<Message> {
-        widget::column::with_children(vec![
-            widget::text::heading(format!(
-                "PID: {}",
-                sys.process(self.selected_process.unwrap()).unwrap().pid()
-            ))
-            .into(),
-            widget::text::heading(format!(
-                "Parent PID: {}",
-                sys.process(self.selected_process.unwrap())
-                    .unwrap()
-                    .parent()
-                    .unwrap()
-            ))
-            .into(),
-        ])
-        .into()
-    }
-
-    pub fn update(
+impl Page for ProcessPage {
+    fn update(
         &mut self,
         sys: &sysinfo::System,
         message: Message,
-    ) -> cosmic::app::Task<Message> {
+    ) -> Task<cosmic::app::Message<Message>> {
         let mut tasks = vec![];
         match message {
             Message::ProcessTermActive => {
@@ -76,7 +43,7 @@ impl ProcessPage {
             Message::ProcessClick(pid) => {
                 if self.selected_process == pid {
                     tasks.push(cosmic::app::command::message(cosmic::app::Message::App(
-                        Message::ToggleContextPage(crate::app::context::ContextPage::ProcInfo),
+                        Message::ToggleContextPage(crate::app::context::ContextPage::PageInfo),
                     )));
                 } else {
                     self.selected_process = pid;
@@ -91,7 +58,8 @@ impl ProcessPage {
                 }
             }
             Message::Refresh => {
-                self.update_processes(sys);
+                self.processes
+                    .update(&self.categories, sys, &self.apps, &self.users);
             }
             Message::KeyPressed(key) => {
                 if key == iced::keyboard::Key::Named(iced::keyboard::key::Named::Escape) {
@@ -101,10 +69,24 @@ impl ProcessPage {
             _ => {}
         };
 
-        cosmic::Task::batch(tasks)
+        Task::batch(tasks)
     }
 
-    pub fn view(&self) -> Element<Message> {
+    fn context_menu(&self) -> Option<cosmic::app::context_drawer::ContextDrawer<'_, Message>> {
+        Some(
+            cosmic::app::context_drawer::context_drawer(
+                widget::column::with_children(vec![widget::text::heading(format!(
+                    "PID: {}",
+                    self.selected_process.unwrap()
+                ))
+                .into()]),
+                Message::ContextClose,
+            )
+            .title("About Process"),
+        )
+    }
+
+    fn view(&self) -> Element<'_, Message> {
         let theme = cosmic::theme::active();
 
         // The vertical column of process elements
@@ -136,7 +118,7 @@ impl ProcessPage {
             .into()
     }
 
-    pub fn footer(&self) -> Option<Element<Message>> {
+    fn footer(&self) -> Option<Element<'_, Message>> {
         let theme = cosmic::theme::active();
         let cosmic = theme.cosmic();
 
@@ -161,10 +143,22 @@ impl ProcessPage {
                 .into(),
         )
     }
+}
 
-    pub fn update_processes(&mut self, sys: &sysinfo::System) {
-        self.processes
-            .update(&self.categories, sys, &self.apps, &self.users);
+impl ProcessPage {
+    pub fn new() -> Self {
+        let users = sysinfo::Users::new_with_refreshed_list();
+        let categories = CategoryList::new();
+        let processes = process::ProcessList::new();
+        let apps = cosmic::desktop::load_applications(None, true);
+        Self {
+            sort_data: (Category::Name, Sort::Descending),
+            users,
+            categories,
+            processes,
+            selected_process: None,
+            apps,
+        }
     }
 }
 

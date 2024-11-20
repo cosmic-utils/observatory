@@ -6,22 +6,16 @@ use statistic::Statistic;
 
 use cosmic::iced::alignment::Horizontal;
 use cosmic::iced::Length;
-use cosmic::{theme, widget, Element};
-use sysinfo::Disks;
+use cosmic::{theme, widget, Element, Task};
+use sysinfo::{Disks, System};
 
 pub struct OverviewPage {
     // nothing yet
     statistics: Vec<Statistic>,
 }
 
-impl OverviewPage {
-    pub fn new() -> Self {
-        Self {
-            statistics: Vec::new(),
-        }
-    }
-
-    pub fn update(&mut self, sys: &sysinfo::System, _message: Message) {
+impl super::Page for OverviewPage {
+    fn update(&mut self, sys: &System, _message: Message) -> Task<cosmic::app::Message<Message>> {
         self.statistics.clear();
         self.statistics.push(Statistic::new(
             "CPU".into(),
@@ -49,9 +43,11 @@ impl OverviewPage {
             ));
             i = i + 1;
         }
+
+        Task::none()
     }
 
-    pub fn view(&self) -> Element<Message> {
+    fn view(&self) -> Element<'_, Message> {
         let theme = theme::active();
         let cosmic = theme.cosmic();
 
@@ -88,5 +84,13 @@ impl OverviewPage {
         .padding([cosmic.space_l(), 0, 0, 0])
         .into()])
         .into()
+    }
+}
+
+impl OverviewPage {
+    pub fn new() -> Self {
+        Self {
+            statistics: Vec::new(),
+        }
     }
 }

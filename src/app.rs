@@ -5,13 +5,10 @@ pub mod flags;
 mod menu;
 pub mod message;
 
-use std::any::TypeId;
-use std::collections::HashMap;
-
 use crate::core::config::ObservatoryConfig;
 use crate::core::icons;
 use crate::fl;
-use crate::pages::{overview, processes, resources};
+use crate::pages::{self, overview, processes, resources};
 use action::Action;
 use bindings::key_binds;
 use context::ContextPage;
@@ -26,14 +23,9 @@ use cosmic::widget::about::About;
 use cosmic::widget::menu::{Action as _, KeyBind};
 pub use cosmic::{executor, ApplicationExt, Element};
 use message::Message;
+use std::any::TypeId;
+use std::collections::HashMap;
 use sysinfo::{ProcessRefreshKind, ProcessesToUpdate};
-
-#[derive(Clone, Copy)]
-pub enum Page {
-    Overview,
-    Resources,
-    Processes,
-}
 
 /// The [`App`] stores application-specific state.
 pub struct App {
@@ -47,9 +39,6 @@ pub struct App {
     key_binds: HashMap<KeyBind, Action>,
     context_page: ContextPage,
     sys: sysinfo::System,
-    overview_page: overview::OverviewPage,
-    process_page: processes::ProcessPage,
-    resource_page: resources::ResourcePage,
 }
 
 /// Implement [`cosmic::Application`] to integrate with COSMIC.
@@ -81,33 +70,20 @@ impl cosmic::Application for App {
             .insert()
             .text("Overview")
             .icon(icons::get_icon("user-home-symbolic", 18))
-            .data(Page::Overview);
+            .data(Box::new(overview::OverviewPage::new()) as Box<dyn pages::Page>);
         nav_model
             .insert()
             .text("Resources")
             .icon(icons::get_icon("speedometer-symbolic", 18))
-            .data(Page::Resources);
+            .data(Box::new(resources::ResourcePage::new()) as Box<dyn pages::Page>);
         nav_model
             .insert()
             .text("Processes")
             .icon(icons::get_icon("view-list-symbolic", 18))
-            .data(Page::Processes);
+            .data(Box::new(processes::ProcessPage::new()) as Box<dyn pages::Page>);
         nav_model.activate_position(0);
 
-        let mut sys = sysinfo::System::new_all();
-        std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
-        sys.refresh_processes_specifics(
-            ProcessesToUpdate::All,
-            true,
-            ProcessRefreshKind::everything(),
-        );
-
-        let mut process_page = processes::ProcessPage::new(&sys);
-        process_page.update_processes(&sys);
-
-        let resource_page = resources::ResourcePage::new();
-
-        let overview_page = overview::OverviewPage::new();
+        let sys = sysinfo::System::new_all();
 
         let (config, handler) = (
             ObservatoryConfig::config(),
@@ -145,12 +121,12 @@ impl cosmic::Application for App {
             key_binds: key_binds(),
             context_page: ContextPage::Settings,
             sys,
-            overview_page,
-            process_page,
-            resource_page,
         };
 
-        let command = app.update_title();
+        let command = Task::batch([
+            app.update_title(),
+            cosmic::app::command::message::app(Message::Refresh),
+        ]);
         (app, command)
     }
 
@@ -159,29 +135,25 @@ impl cosmic::Application for App {
             return None;
         }
 
-        Some(match self.context_page {
-            ContextPage::About => {
+        match self.context_page {
+            ContextPage::About => Some(
                 context_drawer::about(&self.about, Message::Open, Message::ContextClose)
-                    .title(self.context_page.title())
-            }
-            ContextPage::Settings => {
+                    .title(self.context_page.title()),
+            ),
+            ContextPage::Settings => Some(
                 context_drawer::context_drawer(self.settings(), Message::ContextClose)
-                    .title(self.context_page.title())
-            }
-            ContextPage::ProcInfo => context_drawer::context_drawer(
-                self.process_page.proc_info(&self.sys),
-                Message::ContextClose,
-            )
-            .title(self.context_page.title()),
-        })
+                    .title(self.context_page.title()),
+            ),
+            ContextPage::PageInfo => self
+                .nav_model
+                .active_data::<Box<dyn pages::Page>>()?
+                .context_menu(),
+        }
     }
 
     fn footer(&self) -> Option<Element<Self::Message>> {
-        match self.nav_model.active_data::<Page>() {
-            Some(&page) => match page {
-                Page::Processes => self.process_page.footer(),
-                _ => None,
-            },
+        match self.nav_model.active_data::<Box<dyn pages::Page>>() {
+            Some(page) => page.footer(),
             _ => None,
         }
     }
@@ -259,9 +231,10 @@ impl cosmic::Application for App {
         let mut tasks = vec![];
         match message {
             Message::Refresh => {
-                self.sys.refresh_cpu_all();
-                self.sys.refresh_memory();
-                self.sys.refresh_processes_specifics(
+                let sys = &mut self.sys;
+                sys.refresh_cpu_all();
+                sys.refresh_memory();
+                sys.refresh_processes_specifics(
                     ProcessesToUpdate::All,
                     true,
                     ProcessRefreshKind::everything(),
@@ -301,21 +274,28 @@ impl cosmic::Application for App {
             }
             _ => (),
         }
-        tasks.push(self.process_page.update(&self.sys, message.clone()));
-        self.resource_page.update(&self.sys, message.clone());
-        self.overview_page.update(&self.sys, message.clone());
+        // Get the entity ids
+        let entities = self
+            .nav_model
+            .iter()
+            .collect::<Vec<widget::segmented_button::Entity>>();
+
+        for entity in entities {
+            let page = self.nav_model.data_mut::<Box<dyn pages::Page>>(entity);
+            if let Some(page) = page {
+                tasks.push(page.update(&self.sys, message.clone()));
+            }
+        }
 
         Task::batch(tasks)
     }
 
     /// Creates a view after each update.
     fn view(&self) -> Element<Self::Message> {
-        if let Some(page) = self.nav_model.active_data::<Page>() {
-            match page {
-                Page::Overview => widget::container(self.overview_page.view()).into(),
-                Page::Resources => widget::container(self.resource_page.view(&self.sys)).into(),
-                Page::Processes => widget::container(self.process_page.view()).into(),
-            }
+        if let Some(page) = self.nav_model.active_data::<Box<dyn pages::Page>>() {
+            widget::container(page.view())
+                .height(cosmic::iced::Length::Fill)
+                .into()
         } else {
             widget::text("ERROR, PAGE NOT SET").into()
         }

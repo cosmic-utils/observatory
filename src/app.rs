@@ -83,7 +83,7 @@ impl cosmic::Application for App {
             .data(Box::new(processes::ProcessPage::new()) as Box<dyn pages::Page>);
         nav_model.activate_position(0);
 
-        let mut sys = sysinfo::System::new_all();
+        let sys = sysinfo::System::new_all();
 
         let (config, handler) = (
             ObservatoryConfig::config(),

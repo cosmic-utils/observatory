@@ -3,7 +3,6 @@ mod statistic;
 use crate::app::message::Message;
 use crate::core::icons;
 use statistic::Statistic;
-use std::cell::Ref;
 
 use cosmic::iced::alignment::Horizontal;
 use cosmic::iced::Length;
@@ -16,7 +15,7 @@ pub struct OverviewPage {
 }
 
 impl super::Page for OverviewPage {
-    fn update(&mut self, sys: &System, message: Message) -> Task<cosmic::app::Message<Message>> {
+    fn update(&mut self, sys: &System, _message: Message) -> Task<cosmic::app::Message<Message>> {
         self.statistics.clear();
         self.statistics.push(Statistic::new(
             "CPU".into(),

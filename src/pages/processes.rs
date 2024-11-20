@@ -9,7 +9,6 @@ use cosmic::{
     iced::{alignment::Vertical, Length},
     widget, Element,
 };
-use std::cell::Ref;
 
 pub use super::Page;
 

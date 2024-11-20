@@ -5,17 +5,9 @@ mod mem;
 use crate::app::message::Message;
 use crate::core::icons;
 use crate::fl;
-use std::collections::{HashMap, VecDeque};
 
 use crate::pages::Page;
-use cosmic::iced_widget::horizontal_rule;
-use cosmic::{
-    iced::{
-        alignment::{Horizontal, Vertical},
-        Alignment, Length,
-    },
-    iced_widget, theme, widget, Element, Task,
-};
+use cosmic::{iced::Alignment, theme, widget, Element, Task};
 use sysinfo::System;
 
 pub struct ResourcePage {

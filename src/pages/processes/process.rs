@@ -1,4 +1,3 @@
-use std::cell::Ref;
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -153,7 +152,6 @@ pub struct Process {
     mem_bytes: u64,
     disk_bytes: u64,
     pub pid: sysinfo::Pid,
-    parent: Option<sysinfo::Pid>,
 }
 
 // impl Default for Process {
@@ -186,7 +184,6 @@ impl Process {
             mem_bytes: process.memory(),
             disk_bytes: process.disk_usage().read_bytes + process.disk_usage().written_bytes,
             pid: process.pid(),
-            parent: process.parent(),
         };
         for category in categories.0.iter() {
             res.data_points

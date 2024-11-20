@@ -336,7 +336,7 @@ where
         let header_title = self.active_page_title().to_owned();
         let window_title = format!("{header_title} — COSMIC Observatory");
         self.set_header_title(header_title);
-        self.set_window_title(window_title, self.core.main_window_id().unwrap())
+        self.set_window_title(window_title)
     }
 
     fn update_theme(&self) -> Task<Message> {

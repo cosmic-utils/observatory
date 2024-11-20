@@ -23,7 +23,6 @@ features = [
     "winit",
     "wgpu",
     "xdg-portal",
-    "multi-window",
     "about",
 ]
 

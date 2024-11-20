@@ -159,22 +159,7 @@ pub struct Process {
     mem_bytes: u64,
     disk_bytes: u64,
     pub pid: sysinfo::Pid,
-    parent: Option<sysinfo::Pid>,
 }
-
-// impl Default for Process {
-//     fn default() -> Self {
-//         Self {
-//             icon: cosmic::desktop::IconSource::default(),
-//             data_points: Vec::new(),
-//             cpu_percent: 0.,
-//             mem_bytes: 0,
-//             disk_bytes: 0,
-//             pid: sysinfo::Pid::from(0),
-//             children: Vec::new(),
-//         }
-//     }
-// }
 
 impl Process {
     fn from_process(
@@ -192,7 +177,6 @@ impl Process {
             mem_bytes: process.memory(),
             disk_bytes: process.disk_usage().read_bytes + process.disk_usage().written_bytes,
             pid: process.pid(),
-            parent: process.parent(),
         };
         for category in categories.0.iter() {
             res.data_points

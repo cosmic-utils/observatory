@@ -1,9 +1,11 @@
+use std::cell::Ref;
+use std::collections::HashMap;
+use std::path::Path;
+
 use super::category::{Category, CategoryList, Sort};
 use crate::app::message::Message;
 use cosmic::iced::{alignment::Vertical, Length};
 use cosmic::{theme, widget, Element};
-use std::collections::HashMap;
-use std::path::Path;
 use sysinfo::Users;
 
 #[derive(Debug)]
@@ -19,20 +21,12 @@ pub struct ProcessList {
 }
 
 impl ProcessList {
-    pub fn new(
-        categories: &CategoryList,
-        sys: &sysinfo::System,
-        apps: &Vec<cosmic::desktop::DesktopEntryData>,
-        users: &Users,
-    ) -> ProcessList {
-        let mut process_list = ProcessList {
+    pub fn new() -> ProcessList {
+        let process_list = ProcessList {
             process_map: HashMap::new(),
             root_processes: Vec::new(),
             running_flatpaks: Vec::new(),
         };
-
-        process_list.load_flatpaks();
-        process_list.load_processes(categories, sys, apps, users);
 
         process_list
     }

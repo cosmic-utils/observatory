@@ -30,7 +30,7 @@ pub struct CpuResources {
     cpu_usage_history: VecDeque<f32>,
     core_usage_history: Vec<VecDeque<f32>>,
 
-    cpu_usage: f32,
+    cpu_usage: u32,
     cpu_avg: u64,
     process_count: usize,
     thread_count: usize,
@@ -98,7 +98,7 @@ impl CpuResources {
             cpu_usage_history: VecDeque::from([0.0; 60]),
             core_usage_history: Vec::new(),
 
-            cpu_usage: 0.,
+            cpu_usage: 0,
             cpu_avg: 0,
             process_count: 0,
             thread_count: 0,
@@ -131,7 +131,7 @@ impl CpuResources {
     }
 
     fn update_metrics(&mut self, sys: &System) {
-        self.cpu_usage = sys.global_cpu_usage();
+        self.cpu_usage = sys.global_cpu_usage() as u32;
         self.cpu_avg = get_cpu_avg(sys);
         self.process_count = sys
             .processes()

@@ -13,11 +13,9 @@ pub struct MemResources {
 
     memory_usage: usize,
     total_memory: usize,
-    system_memory: usize,
 
     swap_usage: usize,
     total_swap: usize,
-    system_swap: usize,
 }
 
 impl super::Page for MemResources {
@@ -34,12 +32,10 @@ impl super::Page for MemResources {
                 }
 
                 self.memory_usage = sys.used_memory() as usize;
-                self.total_memory += sys.used_memory() as usize;
-                self.system_memory = sys.total_memory() as usize;
+                self.total_memory = sys.total_memory() as usize;
 
                 self.swap_usage = sys.used_swap() as usize;
-                self.total_swap += sys.used_swap() as usize;
-                self.system_swap = sys.total_memory() as usize;
+                self.total_swap = sys.total_swap() as usize;
             }
             _ => {}
         }
@@ -84,10 +80,8 @@ impl MemResources {
 
             memory_usage: 0,
             total_memory: 0,
-            system_memory: 0,
             swap_usage: 0,
             total_swap: 0,
-            system_swap: 0,
         }
     }
 
@@ -135,7 +129,7 @@ impl MemResources {
                 widget::text::body(format!(
                     "{} ({:.1}%)",
                     format_size(self.memory_usage),
-                    calc_usage_percentage(self.memory_usage, self.system_memory)
+                    calc_usage_percentage(self.memory_usage, self.total_memory)
                 ))
                 .into(),
             ])
@@ -151,7 +145,7 @@ impl MemResources {
                 widget::text::body(format!(
                     "{} ({:.1}%)",
                     format_size(self.swap_usage),
-                    calc_usage_percentage(self.swap_usage, self.system_swap)
+                    calc_usage_percentage(self.swap_usage, self.total_swap)
                 ))
                 .into(),
             ])

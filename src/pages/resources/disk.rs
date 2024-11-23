@@ -6,13 +6,15 @@ use cosmic::iced::Length;
 use cosmic::iced_widget::horizontal_rule;
 use cosmic::{theme, widget, Element, Task};
 use std::collections::VecDeque;
-use sysinfo::System;
+use sysinfo::{Disks, System};
 
 pub struct DiskResources {
     disk_write_history: VecDeque<f32>,
     disk_read_history: VecDeque<f32>,
 
+    disk_read: u64,
     total_disk_read: u64,
+    disk_write: u64,
     total_disk_write: u64,
 }
 
@@ -31,6 +33,8 @@ impl super::Page for DiskResources {
                     .map(|p| p.1.disk_usage().written_bytes)
                     .sum();
 
+                self.disk_read = read_sum;
+                self.disk_write = write_sum;
                 self.total_disk_read += read_sum;
                 self.total_disk_write += write_sum;
                 self.disk_write_history.push_back(write_sum as f32);
@@ -90,7 +94,9 @@ impl DiskResources {
             disk_write_history: VecDeque::from([0.0; 60]),
             disk_read_history: VecDeque::from([0.0; 60]),
 
+            disk_read: 0,
             total_disk_read: 0,
+            disk_write: 0,
             total_disk_write: 0,
         }
     }
@@ -152,14 +158,14 @@ impl DiskResources {
                 widget::column::with_children(vec![
                     widget::text::heading(fl!("read")).into(),
                     horizontal_rule(1).into(),
-                    widget::text::body(format!("{}", format_size(self.total_disk_read),)).into(),
+                    widget::text::body(format!("{}", format_size(self.disk_read),)).into(),
                 ])
                 .spacing(cosmic.space_xxxs())
                 .into(),
                 widget::column::with_children(vec![
                     widget::text::heading(fl!("write")).into(),
                     horizontal_rule(1).into(),
-                    widget::text::body(format!("{}", format_size(self.total_disk_write),)).into(),
+                    widget::text::body(format!("{}", format_size(self.disk_write),)).into(),
                 ])
                 .spacing(cosmic.space_xxxs())
                 .into(),

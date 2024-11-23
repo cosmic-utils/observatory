@@ -34,3 +34,10 @@ View and manage running processes on your system.
 
 ![Disk Light](res/screenshots/processes-light.png#gh-light-mode-only)
 ![Disks Dark](res/screenshots/processes-dark.png#gh-dark-mode-only)
+
+## Installation
+To install, clone this repository and run the following command:
+```
+sudo just install
+```
+make sure you have `just` installed on your system

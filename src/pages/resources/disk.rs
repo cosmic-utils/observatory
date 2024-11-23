@@ -6,7 +6,7 @@ use cosmic::iced::Length;
 use cosmic::iced_widget::horizontal_rule;
 use cosmic::{theme, widget, Element, Task};
 use std::collections::VecDeque;
-use sysinfo::{Disks, System};
+use sysinfo::System;
 
 pub struct DiskResources {
     disk_write_history: VecDeque<f32>,

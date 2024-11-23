@@ -1,7 +1,7 @@
 use cosmic::iced::alignment::{Horizontal, Vertical};
 use cosmic::iced::mouse::Cursor;
 use cosmic::iced::widget::canvas;
-use cosmic::iced::{Degrees, Rectangle, Renderer, Vector};
+use cosmic::iced::{Degrees, Point, Rectangle, Renderer, Vector};
 use cosmic::iced_core::text::{LineHeight, Shaping};
 use cosmic::iced_widget::canvas::Geometry;
 use cosmic::Theme;
@@ -31,7 +31,10 @@ impl canvas::Program<crate::app::message::Message, Theme> for Meter {
 
         let mut bg_arc = canvas::path::Builder::new();
         bg_arc.arc(canvas::path::Arc {
-            center: frame.center(),
+            center: Point::new(
+                frame.center().x,
+                frame.height() - self.thickness / 2.0 - true_radius * 0.35,
+            ),
             radius: true_radius,
             start_angle: Degrees(-150.).into(),
             end_angle: Degrees(-30.).into(),
@@ -39,7 +42,7 @@ impl canvas::Program<crate::app::message::Message, Theme> for Meter {
         frame.stroke(
             &bg_arc.build(),
             canvas::Stroke {
-                style: canvas::stroke::Style::Solid(cosmic.bg_component_color().into()),
+                style: canvas::stroke::Style::Solid(cosmic.secondary_container_color().into()),
                 width: self.thickness * scale,
                 line_cap: canvas::LineCap::Round,
                 ..Default::default()
@@ -50,7 +53,10 @@ impl canvas::Program<crate::app::message::Message, Theme> for Meter {
 
         let mut arc = canvas::path::Builder::new();
         arc.arc(canvas::path::Arc {
-            center: frame.center(),
+            center: Point::new(
+                frame.center().x,
+                frame.height() - self.thickness / 2.0 - true_radius * 0.35,
+            ),
             radius: true_radius,
             start_angle: Degrees(-150.).into(),
             end_angle: Degrees(-150. + end_angle).into(),
@@ -67,7 +73,7 @@ impl canvas::Program<crate::app::message::Message, Theme> for Meter {
 
         let text = canvas::Text {
             content: format!("{}%", get_percentage(self.percentage)),
-            position: frame.center() - Vector::new(0., true_radius * 0.25),
+            position: frame.center() + Vector::new(0., true_radius * 0.5),
             color: cosmic.on_bg_color().into(),
             size: (30. * scale).into(),
             line_height: LineHeight::Relative(1.),

@@ -6,7 +6,6 @@ use cosmic::iced::Length;
 use cosmic::iced_widget::horizontal_rule;
 use cosmic::{theme, widget, Element, Task};
 use std::collections::VecDeque;
-use sysinfo::System;
 
 pub struct MemResources {
     mem_usage_history: VecDeque<f32>,
@@ -19,7 +18,7 @@ pub struct MemResources {
 }
 
 impl super::Page for MemResources {
-    fn update(&mut self, sys: &System, message: Message) -> Task<cosmic::app::Message<Message>> {
+    fn update(&mut self, sys: &sysinfo::System, message: Message) -> Task<Message> {
         match message {
             Message::Refresh => {
                 self.mem_usage_history.push_back(

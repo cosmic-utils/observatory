@@ -1,5 +1,6 @@
 [Desktop Entry]
 Name=Observatory
+Comment=System Monitor application for the COSMIC Desktop
 Exec=observatory %F
 Terminal=false
 Type=Application

@@ -7,6 +7,9 @@ pub enum Message {
     Refresh,
     KeyPressed(Key),
 
+    ApplicationSelect(String),
+    ApplicationClose,
+
     ProcessTermActive,
     ProcessKillActive,
     ProcessClick(Option<sysinfo::Pid>),

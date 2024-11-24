@@ -1,10 +1,12 @@
 [Desktop Entry]
 Name=Observatory
+Comment=System Monitor application for the COSMIC Desktop
 Exec=observatory %F
 Terminal=false
 Type=Application
 StartupNotify=true
 Icon=org.cosmic-utils.Observatory
+StartupWMClass=org.cosmic-utils.Observatory
 Categories=COSMIC;
 Keywords=
 MimeType=

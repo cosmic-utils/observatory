@@ -21,10 +21,16 @@ features = [
     "a11y",
     "tokio",
     "winit",
+    "wayland",
     "wgpu",
     "xdg-portal",
     "about",
 ]
+
+[dependencies.cosmic-protocols]
+git = "https://github.com/pop-os/cosmic-protocols.git"
+default-features = false
+features = ["client"]
 
 [dependencies.i18n-embed]
 version = "0.15"

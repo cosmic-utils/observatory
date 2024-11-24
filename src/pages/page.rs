@@ -3,7 +3,7 @@ pub trait Page {
         &mut self,
         sys: &sysinfo::System,
         message: crate::app::message::Message,
-    ) -> cosmic::Task<cosmic::app::Message<crate::app::message::Message>>;
+    ) -> cosmic::Task<crate::app::message::Message>;
 
     fn context_menu(
         &self,

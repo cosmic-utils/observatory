@@ -6,7 +6,6 @@ use cosmic::iced::Length;
 use cosmic::iced_widget::horizontal_rule;
 use cosmic::{theme, widget, Element, Task};
 use std::collections::VecDeque;
-use sysinfo::System;
 
 pub struct DiskResources {
     disk_write_history: VecDeque<f32>,
@@ -19,7 +18,7 @@ pub struct DiskResources {
 }
 
 impl super::Page for DiskResources {
-    fn update(&mut self, sys: &System, message: Message) -> Task<cosmic::app::Message<Message>> {
+    fn update(&mut self, sys: &sysinfo::System, message: Message) -> Task<Message> {
         match message {
             Message::Refresh => {
                 let read_sum: u64 = sys

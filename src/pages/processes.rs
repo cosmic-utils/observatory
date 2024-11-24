@@ -22,11 +22,7 @@ pub struct ProcessPage {
 }
 
 impl Page for ProcessPage {
-    fn update(
-        &mut self,
-        sys: &sysinfo::System,
-        message: Message,
-    ) -> Task<cosmic::app::Message<Message>> {
+    fn update(&mut self, sys: &sysinfo::System, message: Message) -> Task<Message> {
         let mut tasks = vec![];
         match message {
             Message::ProcessTermActive => {
@@ -112,10 +108,12 @@ impl Page for ProcessPage {
             ContextMenuAction::menu(),
         );
 
-        col.push(process_group_scroll)
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .into()
+        widget::container(
+            col.push(process_group_scroll)
+                .width(Length::Fill)
+                .height(Length::Fill),
+        )
+        .into()
     }
 
     fn footer(&self) -> Option<Element<'_, Message>> {

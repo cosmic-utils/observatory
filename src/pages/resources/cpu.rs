@@ -40,7 +40,11 @@ pub struct CpuResources {
 }
 
 impl super::Page for CpuResources {
-    fn update(&mut self, sys: &System, message: Message) -> Task<cosmic::app::Message<Message>> {
+    fn update(
+        &mut self,
+        sys: &sysinfo::System,
+        message: crate::app::message::Message,
+    ) -> cosmic::Task<crate::app::message::Message> {
         match message {
             Message::Refresh => {
                 self.update_usage_graphs(&sys);

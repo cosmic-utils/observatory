@@ -17,7 +17,8 @@ pub struct OverviewPage {
 
 impl super::Page for OverviewPage {
     fn update(&mut self, sys: &sysinfo::System, message: Message) -> Task<Message> {
-        self.applications.update(&sys, message.clone());
+        let mut tasks = Vec::new();
+        tasks.push(self.applications.update(&sys, message.clone()));
         match message {
             Message::Refresh => {
                 self.statistics.clear();
@@ -51,7 +52,7 @@ impl super::Page for OverviewPage {
             }
             _ => {}
         }
-        Task::none()
+        Task::batch(tasks)
     }
 
     fn view(&self) -> Element<'_, Message> {
@@ -98,6 +99,10 @@ impl super::Page for OverviewPage {
         ])
         .spacing(cosmic.space_xs())
         .into()
+    }
+
+    fn footer(&self) -> Option<Element<Message>> {
+        self.applications.footer()
     }
 }
 

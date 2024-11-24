@@ -1,6 +1,6 @@
 use crate::app::message::Message;
 use crate::pages::Page;
-use cosmic::{widget, Element, Task};
+use cosmic::{theme, widget, Element, Task};
 
 use cosmic::cctk::cosmic_protocols::toplevel_info::v1::client::zcosmic_toplevel_handle_v1::ZcosmicToplevelHandleV1;
 use cosmic::cctk::cosmic_protocols::toplevel_management::v1::client::zcosmic_toplevel_manager_v1::ZcosmicToplelevelManagementCapabilitiesV1;
@@ -12,8 +12,9 @@ use cosmic::cctk::wayland_client::globals::registry_queue_init;
 use cosmic::cctk::wayland_client::{
     protocol::wl_output, Connection, EventQueue, QueueHandle, WEnum,
 };
-use cosmic::cctk::{delegate_toplevel_info, sctk};
+use cosmic::cctk::{delegate_toplevel_info, delegate_toplevel_manager, sctk};
 use cosmic::iced::alignment::{Horizontal, Vertical};
+use cosmic::iced::keyboard::Key;
 use cosmic::iced::{Background, Length};
 use cosmic::iced_widget::horizontal_rule;
 use sysinfo::System;
@@ -22,6 +23,7 @@ pub struct Applications {
     output_state: OutputState,
     registry_state: RegistryState,
     toplevel_info_state: ToplevelInfoState,
+    toplevel_manager_state: ToplevelManagerState,
 }
 
 pub struct ApplicationPage {
@@ -33,6 +35,7 @@ pub struct ApplicationPage {
 
 impl Page for ApplicationPage {
     fn update(&mut self, _sys: &System, message: Message) -> Task<Message> {
+        let mut tasks = Vec::new();
         match message {
             Message::Refresh => {
                 self.event_queue.roundtrip(&mut self.app_data).unwrap();
@@ -47,6 +50,11 @@ impl Page for ApplicationPage {
                     self.active_toplevel = toplevel.1.cloned();
                 }
             }
+            Message::Key(_, key) => {
+                if key == Key::Character("k".into()) {
+                    tasks.push(cosmic::task::message(Message::ApplicationClose));
+                }
+            }
             Message::ApplicationClose => {
                 if let Some(active_toplevel) = self.active_toplevel.take() {
                     if let Some(toplevel) = self
@@ -56,7 +64,10 @@ impl Page for ApplicationPage {
                         .find(|toplevel| toplevel.1.unwrap().app_id == active_toplevel.app_id)
                         .take()
                     {
-                        // TODO
+                        self.app_data
+                            .toplevel_manager_state
+                            .manager
+                            .close(toplevel.0);
                     }
                 }
             }
@@ -64,11 +75,11 @@ impl Page for ApplicationPage {
             _ => {}
         }
 
-        Task::none()
+        Task::batch(tasks)
     }
 
     fn view(&self) -> Element<'_, Message> {
-        let theme = cosmic::theme::active();
+        let theme = theme::active();
         let cosmic = theme.cosmic();
         let header = widget::container(widget::text::heading("Applications"))
             .padding([0, cosmic.space_xs()]);
@@ -164,7 +175,6 @@ impl Page for ApplicationPage {
                         }),
                     }),
                 );
-                log::warn!("Selected color: {:?}", cosmic.text_button.selected);
             }
         }
         widget::container(
@@ -181,6 +191,25 @@ impl Page for ApplicationPage {
         .padding([cosmic.space_m(), cosmic.space_s()])
         .into()
     }
+
+    fn footer(&self) -> Option<Element<'_, Message>> {
+        let theme = theme::active();
+        let cosmic = theme.cosmic();
+        let mut close_button = widget::button::suggested("Close");
+        if self.active_toplevel.is_some() {
+            close_button = close_button.on_press(Message::ApplicationClose);
+        }
+
+        Some(
+            widget::layer_container(widget::row::with_children(vec![
+                widget::horizontal_space().into(),
+                close_button.into(),
+            ]))
+            .layer(cosmic::cosmic_theme::Layer::Primary)
+            .padding([cosmic.space_xxs(), cosmic.space_xs()])
+            .into(),
+        )
+    }
 }
 
 impl ApplicationPage {
@@ -194,6 +223,7 @@ impl ApplicationPage {
             app_data: Applications {
                 output_state: OutputState::new(&globals, &qh),
                 toplevel_info_state: ToplevelInfoState::new(&registry_state, &qh),
+                toplevel_manager_state: ToplevelManagerState::new(&registry_state, &qh),
                 registry_state,
             },
             event_queue,
@@ -203,18 +233,17 @@ impl ApplicationPage {
     }
 }
 
-impl ToplevelManagerHandler for ApplicationPage {
+impl ToplevelManagerHandler for Applications {
     fn toplevel_manager_state(&mut self) -> &mut ToplevelManagerState {
-        todo!()
+        &mut self.toplevel_manager_state
     }
 
     fn capabilities(
         &mut self,
-        conn: &Connection,
-        qh: &QueueHandle<Self>,
-        capabilities: Vec<WEnum<ZcosmicToplelevelManagementCapabilitiesV1>>,
+        _: &Connection,
+        _: &QueueHandle<Self>,
+        _: Vec<WEnum<ZcosmicToplelevelManagementCapabilitiesV1>>,
     ) {
-        todo!()
     }
 }
 
@@ -279,3 +308,5 @@ impl ProvidesRegistryState for Applications {
 sctk::delegate_registry!(Applications);
 
 delegate_toplevel_info!(Applications);
+
+delegate_toplevel_manager!(Applications);

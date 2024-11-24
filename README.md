@@ -20,7 +20,7 @@ View information about your system.
 View usage per core, threads, processes handles, up time, speed and total usage.
 
 ![CPU Light](res/screenshots/processor-light.png#gh-light-mode-only)
-![CPU Dark](res/screenshots/processor-dark.png#gh-dark-mode-only)u
+![CPU Dark](res/screenshots/processor-dark.png#gh-dark-mode-only)
 
 ## Memory
 

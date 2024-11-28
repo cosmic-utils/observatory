@@ -1,0 +1,41 @@
+{
+  "id": "io.github.cosmic_utils.observatory",
+  "runtime": "org.freedesktop.Platform",
+  "runtime-version": "24.08",
+  "base": "com.system76.Cosmic.BaseApp",
+  "base-version": "stable",
+  "sdk": "org.freedesktop.Sdk",
+  "sdk-extensions": ["org.freedesktop.Sdk.Extension.rust-stable"],
+  "command": "cosmic-ext-tweaks",
+  "finish-args": [
+    "--share=ipc",
+    "--socket=fallback-x11",
+    "--socket=wayland",
+    "--device=dri",
+    "--talk-name=com.system76.CosmicSettingsDaemon"
+  ],
+  "build-options": {
+    "append-path": "/usr/lib/sdk/rust-stable/bin",
+    "env": {
+      "CARGO_HOME": "/run/build/observatory/cargo"
+    }
+  },
+  "modules": [
+    {
+      "name": "observatory",
+      "buildsystem": "simple",
+      "build-commands": [
+        "cargo --offline build --release --verbose",
+        "just prefix=/app install "
+      ],
+      "sources": [
+        {
+          "type": "git",
+          "url": "https://github.com/cosmic-utils/observatory.git",
+          "commit": ""
+        },
+        "cargo-sources.json"
+      ]
+    }
+  ]
+}

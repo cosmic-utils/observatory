@@ -1,20 +1,23 @@
 name := 'observatory'
-appid := 'org.cosmic-utils.Observatory'
+appid := 'io.github.cosmic_utils.observatory'
 
 rootdir := ''
 prefix := '/usr'
 
 base-dir := absolute_path(clean(rootdir / prefix))
+share-dir := base-dir / 'share'
 
 bin-src := 'target' / 'release' / name
 bin-dst := base-dir / 'bin' / name
 
 desktop := appid + '.desktop'
 desktop-src := 'res' / desktop
-desktop-dst := clean(rootdir / prefix) / 'share' / 'applications' / desktop
+desktop-dst := share-dir / 'applications' / desktop
+
+metainfo-dst := share-dir / 'metainfo' / appid + '.xml'
 
 icons-src := 'res' / 'icons' / 'hicolor'
-icons-dst := clean(rootdir / prefix) / 'share' / 'icons' / 'hicolor'
+icons-dst := share-dir / 'icons' / 'hicolor'
 
 icon-svg-src := icons-src / 'scalable' / 'apps' / 'icon.svg'
 icon-svg-dst := icons-dst / 'scalable' / 'apps' / appid + '.svg'
@@ -59,10 +62,11 @@ install:
     install -Dm0755 {{bin-src}} {{bin-dst}}
     install -Dm0644 res/app.desktop {{desktop-dst}}
     install -Dm0644 {{icon-svg-src}} {{icon-svg-dst}}
+    install -Dm0644 res/metainfo.xml {{metainfo-dst}}
 
 # Uninstalls installed files
 uninstall:
-    rm {{bin-dst}} {{desktop-dst}} {{icon-svg-dst}}
+    rm {{bin-dst}} {{desktop-dst}} {{icon-svg-dst}} {{metainfo-dst}}
 
 # Vendor dependencies locally
 vendor:

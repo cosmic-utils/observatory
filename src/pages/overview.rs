@@ -1,7 +1,7 @@
 mod applications;
 mod statistic;
 
-use crate::app::message::Message;
+use crate::app::message::AppMessage;
 use crate::core::icons;
 use statistic::Statistic;
 
@@ -16,11 +16,15 @@ pub struct OverviewPage {
 }
 
 impl super::Page for OverviewPage {
-    fn update(&mut self, sys: &sysinfo::System, message: Message) -> Task<Message> {
+    fn update(
+        &mut self,
+        sys: &sysinfo::System,
+        message: crate::app::message::AppMessage,
+    ) -> cosmic::Task<cosmic::app::message::Message<crate::app::message::AppMessage>> {
         let mut tasks = Vec::new();
         tasks.push(self.applications.update(&sys, message.clone()));
         match message {
-            Message::Refresh => {
+            AppMessage::Refresh => {
                 self.statistics.clear();
                 self.statistics.push(Statistic::new(
                     "CPU".into(),
@@ -55,7 +59,7 @@ impl super::Page for OverviewPage {
         Task::batch(tasks)
     }
 
-    fn view(&self) -> Element<'_, Message> {
+    fn view(&self) -> Element<'_, AppMessage> {
         let theme = theme::active();
         let cosmic = theme.cosmic();
 
@@ -101,7 +105,7 @@ impl super::Page for OverviewPage {
         .into()
     }
 
-    fn footer(&self) -> Option<Element<Message>> {
+    fn footer(&self) -> Option<Element<AppMessage>> {
         self.applications.footer()
     }
 }

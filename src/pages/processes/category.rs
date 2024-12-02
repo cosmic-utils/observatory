@@ -1,4 +1,4 @@
-use crate::app::message::Message;
+use crate::app::message::AppMessage;
 use cosmic::iced::alignment::{Horizontal, Vertical};
 use cosmic::iced::Length;
 use cosmic::{theme, widget, Element};
@@ -46,7 +46,7 @@ impl CategoryList {
         )
     }
 
-    pub fn element(&self, theme: &theme::Theme, sort: &(Category, Sort)) -> Element<Message> {
+    pub fn element(&self, theme: &theme::Theme, sort: &(Category, Sort)) -> Element<AppMessage> {
         let row = widget::row::with_children(
             self.0
                 .iter()
@@ -116,7 +116,7 @@ impl Category {
         }
     }
 
-    pub fn element(&self, theme: &theme::Theme, sort: &(Category, Sort)) -> Element<Message> {
+    pub fn element(&self, theme: &theme::Theme, sort: &(Category, Sort)) -> Element<AppMessage> {
         let cosmic = theme.cosmic();
 
         let header = widget::row::with_children(if sort.0 == self.clone() {
@@ -142,7 +142,7 @@ impl Category {
                 .width(self.width()),
         )
         .padding([0, 0])
-        .on_press(Message::ProcessCategoryClick(self.index()))
+        .on_press(AppMessage::ProcessCategoryClick(self.index()))
         .class(cosmic::style::Button::HeaderBar)
         .into()
     }

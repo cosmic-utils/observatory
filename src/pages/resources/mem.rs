@@ -1,4 +1,4 @@
-use crate::app::message::Message;
+use crate::app::message::AppMessage;
 use crate::fl;
 
 use cosmic::iced::alignment::{Horizontal, Vertical};
@@ -18,9 +18,13 @@ pub struct MemResources {
 }
 
 impl super::Page for MemResources {
-    fn update(&mut self, sys: &sysinfo::System, message: Message) -> Task<Message> {
+    fn update(
+        &mut self,
+        sys: &sysinfo::System,
+        message: crate::app::message::AppMessage,
+    ) -> cosmic::Task<cosmic::app::message::Message<crate::app::message::AppMessage>> {
         match message {
-            Message::Refresh => {
+            AppMessage::Refresh => {
                 self.mem_usage_history.push_back(
                     calc_usage_percentage(sys.used_memory() as usize, sys.total_memory() as usize)
                         as f32
@@ -42,7 +46,7 @@ impl super::Page for MemResources {
         Task::none()
     }
 
-    fn view(&self) -> Element<'_, Message> {
+    fn view(&self) -> Element<'_, AppMessage> {
         let theme = theme::active();
         let cosmic = theme.cosmic();
         let mem_name = widget::container(
@@ -54,7 +58,7 @@ impl super::Page for MemResources {
         );
 
         let page =
-            widget::row::with_children::<Message>(vec![self.graph(), self.info_column(&cosmic)])
+            widget::row::with_children::<AppMessage>(vec![self.graph(), self.info_column(&cosmic)])
                 .spacing(cosmic.space_s());
 
         widget::container(
@@ -84,7 +88,7 @@ impl MemResources {
         }
     }
 
-    fn graph(&self) -> Element<Message> {
+    fn graph(&self) -> Element<AppMessage> {
         // Usage graph
         widget::container(
             widget::canvas(crate::widgets::line_graph::LineGraph {
@@ -99,7 +103,7 @@ impl MemResources {
         .into()
     }
 
-    fn info_column(&self, cosmic: &theme::CosmicTheme) -> Element<Message> {
+    fn info_column(&self, cosmic: &theme::CosmicTheme) -> Element<AppMessage> {
         let mut col = widget::column::with_capacity(10);
         col = col.push(
             widget::row::with_children(vec![

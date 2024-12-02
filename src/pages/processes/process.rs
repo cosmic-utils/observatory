@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::path::Path;
 
 use super::category::{Category, CategoryList, Sort};
-use crate::app::message::Message;
+use crate::app::message::AppMessage;
 use cosmic::iced::{alignment::Vertical, Length};
 use cosmic::{theme, widget, Element};
 use sysinfo::Users;
@@ -117,7 +117,7 @@ impl ProcessList {
         theme: &theme::Theme,
         selected_process: &Option<sysinfo::Pid>,
         sort: &(Category, Sort),
-    ) -> Element<Message> {
+    ) -> Element<AppMessage> {
         let cosmic = theme.cosmic();
         let mut process_column =
             widget::column()
@@ -278,9 +278,9 @@ impl Process {
         cosmic::desktop::IconSource::default()
     }
 
-    fn element(&self, theme: &cosmic::Theme, is_selected: bool) -> Element<'_, Message> {
+    fn element(&self, theme: &cosmic::Theme, is_selected: bool) -> Element<'_, AppMessage> {
         let data = &self.data_points;
-        let mut row = widget::row::with_capacity::<Message>(6);
+        let mut row = widget::row::with_capacity::<AppMessage>(6);
         for dp in data {
             row = row.push(dp.element(theme));
         }
@@ -293,7 +293,7 @@ impl Process {
                 theme::Button::HeaderBar
             })
             .padding([0, 0])
-            .on_press(Message::ProcessClick(Some(self.pid)))
+            .on_press(AppMessage::ProcessClick(Some(self.pid)))
             .into()
     }
 }
@@ -389,7 +389,7 @@ impl DataPoint {
         }
     }
 
-    fn element(&self, theme: &theme::Theme) -> Element<'_, Message> {
+    fn element(&self, theme: &theme::Theme) -> Element<'_, AppMessage> {
         let cosmic = theme.cosmic();
 
         let icon: Option<cosmic::desktop::IconSource> = self.icon.clone();

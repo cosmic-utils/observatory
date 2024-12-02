@@ -9,11 +9,11 @@ use cosmic::{
 };
 
 use crate::{
-    app::{Action, Message},
+    app::{Action, AppMessage},
     fl,
 };
 
-pub fn menu_bar<'a>(key_binds: &HashMap<KeyBind, Action>) -> Element<'a, Message> {
+pub fn menu_bar<'a>(key_binds: &HashMap<KeyBind, Action>) -> Element<'a, AppMessage> {
     MenuBar::new(vec![Tree::with_children(
         root(fl!("view")),
         items(

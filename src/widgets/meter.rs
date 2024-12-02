@@ -12,7 +12,7 @@ pub struct Meter {
     pub thickness: f32,
 }
 
-impl canvas::Program<crate::app::message::Message, Theme> for Meter {
+impl canvas::Program<crate::app::message::AppMessage, Theme> for Meter {
     type State = ();
 
     fn draw(

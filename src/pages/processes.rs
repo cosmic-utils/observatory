@@ -1,7 +1,7 @@
 mod category;
 mod process;
 
-use crate::app::message::Message;
+use crate::app::message::AppMessage;
 use category::{Category, CategoryList, Sort};
 use cosmic::iced_widget;
 use cosmic::{iced, Task};
@@ -22,30 +22,34 @@ pub struct ProcessPage {
 }
 
 impl Page for ProcessPage {
-    fn update(&mut self, sys: &sysinfo::System, message: Message) -> Task<Message> {
+    fn update(
+        &mut self,
+        sys: &sysinfo::System,
+        message: crate::app::message::AppMessage,
+    ) -> cosmic::Task<cosmic::app::message::Message<crate::app::message::AppMessage>> {
         let mut tasks = vec![];
         match message {
-            Message::ProcessTermActive => {
+            AppMessage::ProcessTermActive => {
                 sys.process(self.selected_process.unwrap())
                     .unwrap()
                     .kill_with(sysinfo::Signal::Term)
                     .unwrap();
                 self.selected_process = None;
             }
-            Message::ProcessKillActive => {
+            AppMessage::ProcessKillActive => {
                 sys.process(self.selected_process.unwrap()).unwrap().kill();
                 self.selected_process = None;
             }
-            Message::ProcessClick(pid) => {
+            AppMessage::ProcessClick(pid) => {
                 if self.selected_process == pid {
-                    tasks.push(cosmic::app::command::message(cosmic::app::Message::App(
-                        Message::ToggleContextPage(crate::app::context::ContextPage::PageInfo),
+                    tasks.push(cosmic::task::message(AppMessage::ToggleContextPage(
+                        crate::app::context::ContextPage::PageInfo,
                     )));
                 } else {
                     self.selected_process = pid;
                 }
             }
-            Message::ProcessCategoryClick(index) => {
+            AppMessage::ProcessCategoryClick(index) => {
                 let cat = Category::from_index(index);
                 if cat == self.sort_data.0 {
                     self.sort_data.1.opposite();
@@ -53,11 +57,11 @@ impl Page for ProcessPage {
                     self.sort_data = (cat, Sort::Descending);
                 }
             }
-            Message::Refresh => {
+            AppMessage::Refresh => {
                 self.processes
                     .update(&self.categories, sys, &self.apps, &self.users);
             }
-            Message::KeyPressed(key) => {
+            AppMessage::KeyPressed(key) => {
                 if key == iced::keyboard::Key::Named(iced::keyboard::key::Named::Escape) {
                     self.selected_process = None;
                 }
@@ -68,7 +72,7 @@ impl Page for ProcessPage {
         Task::batch(tasks)
     }
 
-    fn context_menu(&self) -> Option<cosmic::app::context_drawer::ContextDrawer<'_, Message>> {
+    fn context_menu(&self) -> Option<cosmic::app::context_drawer::ContextDrawer<'_, AppMessage>> {
         Some(
             cosmic::app::context_drawer::context_drawer(
                 widget::column::with_children(vec![widget::text::heading(format!(
@@ -76,13 +80,13 @@ impl Page for ProcessPage {
                     self.selected_process.unwrap()
                 ))
                 .into()]),
-                Message::ContextClose,
+                AppMessage::ContextClose,
             )
             .title("About Process"),
         )
     }
 
-    fn view(&self) -> Element<'_, Message> {
+    fn view(&self) -> Element<'_, AppMessage> {
         let theme = cosmic::theme::active();
 
         // The vertical column of process elements
@@ -116,7 +120,7 @@ impl Page for ProcessPage {
         .into()
     }
 
-    fn footer(&self) -> Option<Element<'_, Message>> {
+    fn footer(&self) -> Option<Element<'_, AppMessage>> {
         let theme = cosmic::theme::active();
         let cosmic = theme.cosmic();
 
@@ -125,10 +129,11 @@ impl Page for ProcessPage {
             .spacing(cosmic.space_xs());
         row = row.push(widget::horizontal_space());
         if self.selected_process.is_some() {
-            row =
-                row.push(widget::button::destructive("Kill").on_press(Message::ProcessKillActive));
             row = row
-                .push(widget::button::suggested("Terminate").on_press(Message::ProcessTermActive));
+                .push(widget::button::destructive("Kill").on_press(AppMessage::ProcessKillActive));
+            row = row.push(
+                widget::button::suggested("Terminate").on_press(AppMessage::ProcessTermActive),
+            );
         } else {
             row = row.push(widget::button::destructive("Kill"));
             row = row.push(widget::button::suggested("Terminate"));
@@ -167,7 +172,7 @@ enum ContextMenuAction {
 }
 
 impl ContextMenuAction {
-    fn menu<'a>() -> Option<Vec<widget::menu::Tree<'a, Message>>> {
+    fn menu<'a>() -> Option<Vec<widget::menu::Tree<'a, AppMessage>>> {
         Some(widget::menu::items(
             &std::collections::HashMap::new(),
             vec![
@@ -180,11 +185,11 @@ impl ContextMenuAction {
 }
 
 impl widget::menu::Action for ContextMenuAction {
-    type Message = Message;
+    type Message = AppMessage;
     fn message(&self) -> Self::Message {
         match self {
-            ContextMenuAction::Kill => Message::ProcessKillActive,
-            ContextMenuAction::Term => Message::ProcessTermActive,
+            ContextMenuAction::Kill => AppMessage::ProcessKillActive,
+            ContextMenuAction::Term => AppMessage::ProcessTermActive,
         }
     }
 }

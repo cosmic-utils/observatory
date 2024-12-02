@@ -12,7 +12,7 @@ pub struct LineGraph {
     pub autoscale: bool,
 }
 
-impl canvas::Program<crate::app::message::Message, theme::Theme> for LineGraph {
+impl canvas::Program<crate::app::message::AppMessage, theme::Theme> for LineGraph {
     type State = ();
 
     fn draw(

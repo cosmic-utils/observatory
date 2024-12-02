@@ -3,7 +3,7 @@ use cosmic::iced::keyboard::{Key, Modifiers};
 use crate::app::context::ContextPage;
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum Message {
+pub enum AppMessage {
     Refresh,
     KeyPressed(Key),
 

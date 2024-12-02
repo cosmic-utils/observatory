@@ -1,6 +1,6 @@
 use cosmic::widget::menu::Action as MenuAction;
 
-use super::Message;
+use super::AppMessage;
 use crate::app::ContextPage;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -10,11 +10,11 @@ pub enum Action {
 }
 
 impl MenuAction for Action {
-    type Message = Message;
+    type Message = AppMessage;
     fn message(&self) -> Self::Message {
         match self {
-            Action::About => Message::ToggleContextPage(ContextPage::About),
-            Action::Settings => Message::ToggleContextPage(ContextPage::Settings),
+            Action::About => AppMessage::ToggleContextPage(ContextPage::About),
+            Action::Settings => AppMessage::ToggleContextPage(ContextPage::Settings),
         }
     }
 }

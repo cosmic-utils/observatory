@@ -2,7 +2,7 @@ mod cpu;
 mod disk;
 mod mem;
 
-use crate::app::message::Message;
+use crate::app::message::AppMessage;
 use crate::core::icons;
 use crate::fl;
 
@@ -14,7 +14,11 @@ pub struct ResourcePage {
 }
 
 impl Page for ResourcePage {
-    fn update(&mut self, sys: &sysinfo::System, message: Message) -> Task<Message> {
+    fn update(
+        &mut self,
+        sys: &sysinfo::System,
+        message: crate::app::message::AppMessage,
+    ) -> cosmic::Task<cosmic::app::message::Message<crate::app::message::AppMessage>> {
         let mut tasks = Vec::new();
 
         let entities = self
@@ -22,7 +26,7 @@ impl Page for ResourcePage {
             .iter()
             .collect::<Vec<widget::segmented_button::Entity>>();
         match message {
-            Message::ResourceTabSelected(entity) => {
+            AppMessage::ResourceTabSelected(entity) => {
                 self.tab_model.activate(entity);
             }
             _ => {}
@@ -38,13 +42,13 @@ impl Page for ResourcePage {
         Task::none()
     }
 
-    fn view(&self) -> Element<'_, Message> {
+    fn view(&self) -> Element<'_, AppMessage> {
         // Tab bar
         let tabs = widget::segmented_button::horizontal(&self.tab_model)
             .style(theme::SegmentedButton::TabBar)
             .button_alignment(Alignment::Center)
             .maximum_button_width(50)
-            .on_activate(Message::ResourceTabSelected)
+            .on_activate(AppMessage::ResourceTabSelected)
             .into();
 
         // Data

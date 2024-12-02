@@ -12,8 +12,8 @@ use crate::pages::{self, overview, processes, resources};
 use action::Action;
 use bindings::key_binds;
 use context::ContextPage;
-use cosmic::app::context_drawer;
-pub use cosmic::app::{Core, Task};
+use cosmic::app::Core;
+use cosmic::app::{context_drawer, Message};
 use cosmic::cosmic_config::{CosmicConfigEntry, Update};
 use cosmic::cosmic_theme::ThemeMode;
 use cosmic::iced::keyboard::{Key, Modifiers};
@@ -21,8 +21,9 @@ use cosmic::iced::{event, keyboard::Event as KeyEvent, Event};
 use cosmic::widget;
 use cosmic::widget::about::About;
 use cosmic::widget::menu::{Action as _, KeyBind};
+use cosmic::Task;
 pub use cosmic::{executor, ApplicationExt, Element};
-use message::Message;
+use message::AppMessage;
 use std::any::TypeId;
 use std::collections::HashMap;
 use sysinfo::{ProcessRefreshKind, ProcessesToUpdate};
@@ -50,7 +51,7 @@ impl cosmic::Application for App {
     type Flags = flags::Flags;
 
     /// Message types specific to our [`App`].
-    type Message = Message;
+    type Message = AppMessage;
 
     /// The unique application ID to supply to the window manager.
     const APP_ID: &'static str = "io.github.cosmic_utils.observatory";
@@ -64,7 +65,7 @@ impl cosmic::Application for App {
     }
 
     /// Creates the application, and optionally emits command on initialize.
-    fn init(core: Core, _input: Self::Flags) -> (Self, Task<Self::Message>) {
+    fn init(core: Core, _input: Self::Flags) -> (Self, cosmic::app::command::Task<Self::Message>) {
         let mut nav_model = widget::nav_bar::Model::default();
         nav_model
             .insert()
@@ -125,7 +126,7 @@ impl cosmic::Application for App {
 
         let command = Task::batch([
             app.update_title(),
-            cosmic::app::command::message::app(Message::Refresh),
+            cosmic::task::message(cosmic::app::message::app(AppMessage::Refresh)),
         ]);
         (app, command)
     }
@@ -137,11 +138,11 @@ impl cosmic::Application for App {
 
         match self.context_page {
             ContextPage::About => Some(
-                context_drawer::about(&self.about, Message::Open, Message::ContextClose)
+                context_drawer::about(&self.about, AppMessage::Open, AppMessage::ContextClose)
                     .title(self.context_page.title()),
             ),
             ContextPage::Settings => Some(
-                context_drawer::context_drawer(self.settings(), Message::ContextClose)
+                context_drawer::context_drawer(self.settings(), AppMessage::ContextClose)
                     .title(self.context_page.title()),
             ),
             ContextPage::PageInfo => self
@@ -168,14 +169,17 @@ impl cosmic::Application for App {
     }
 
     /// Called when a navigation item is selected.
-    fn on_nav_select(&mut self, id: widget::nav_bar::Id) -> Task<Self::Message> {
+    fn on_nav_select(
+        &mut self,
+        id: widget::nav_bar::Id,
+    ) -> cosmic::app::command::Task<Self::Message> {
         self.nav_model.activate(id);
         self.update_title()
     }
 
-    fn subscription(&self) -> cosmic::iced::Subscription<Message> {
+    fn subscription(&self) -> cosmic::iced::Subscription<AppMessage> {
         let update_clock = cosmic::iced::time::every(cosmic::iced::time::Duration::from_secs(1))
-            .map(|_| Message::Refresh);
+            .map(|_| AppMessage::Refresh);
         let key_press =
             cosmic::iced_winit::graphics::futures::keyboard::on_key_press(key_to_message);
 
@@ -184,10 +188,10 @@ impl cosmic::Application for App {
 
         let keybinds = event::listen_with(|event, _status, _window_id| match event {
             Event::Keyboard(KeyEvent::KeyPressed { key, modifiers, .. }) => {
-                Some(Message::Key(modifiers, key))
+                Some(AppMessage::Key(modifiers, key))
             }
             Event::Keyboard(KeyEvent::ModifiersChanged(modifiers)) => {
-                Some(Message::Modifiers(modifiers))
+                Some(AppMessage::Modifiers(modifiers))
             }
             _ => None,
         });
@@ -205,7 +209,7 @@ impl cosmic::Application for App {
                     update.errors
                 );
             }
-            Message::SystemThemeChanged
+            AppMessage::SystemThemeChanged
         });
         let theme = cosmic::cosmic_config::config_subscription::<_, ThemeMode>(
             TypeId::of::<ThemeSubscription>(),
@@ -220,17 +224,17 @@ impl cosmic::Application for App {
                     update.errors
                 );
             }
-            Message::SystemThemeChanged
+            AppMessage::SystemThemeChanged
         });
 
         cosmic::iced::Subscription::batch([update_clock, key_press, keybinds, config, theme])
     }
 
     /// Handle application events here.
-    fn update(&mut self, message: Self::Message) -> Task<Self::Message> {
+    fn update(&mut self, message: Self::Message) -> Task<cosmic::app::Message<AppMessage>> {
         let mut tasks = vec![];
         match message {
-            Message::Refresh => {
+            AppMessage::Refresh => {
                 let sys = &mut self.sys;
                 sys.refresh_cpu_all();
                 sys.refresh_memory();
@@ -240,13 +244,13 @@ impl cosmic::Application for App {
                     ProcessRefreshKind::everything(),
                 );
             }
-            Message::SystemThemeChanged => tasks.push(self.update_theme()),
-            Message::Open(ref url) => {
+            AppMessage::SystemThemeChanged => tasks.push(self.update_theme()),
+            AppMessage::Open(ref url) => {
                 if let Err(err) = open::that_detached(url) {
                     log::error!("Failed to open URL: {}", err);
                 }
             }
-            Message::ToggleContextPage(ref context_page) => {
+            AppMessage::ToggleContextPage(ref context_page) => {
                 if &self.context_page == context_page {
                     self.core.window.show_context = !self.core.window.show_context;
                 } else {
@@ -254,18 +258,18 @@ impl cosmic::Application for App {
                     self.core.window.show_context = true;
                 }
             }
-            Message::ContextClose => self.core.window.show_context = false,
-            Message::Key(modifiers, ref key) => {
+            AppMessage::ContextClose => self.core.window.show_context = false,
+            AppMessage::Key(modifiers, ref key) => {
                 for (key_bind, action) in &self.key_binds {
                     if key_bind.matches(modifiers, key) {
                         return self.update(action.message());
                     }
                 }
             }
-            Message::Modifiers(modifiers) => {
+            AppMessage::Modifiers(modifiers) => {
                 self.modifiers = modifiers;
             }
-            Message::AppTheme(theme) => {
+            AppMessage::AppTheme(theme) => {
                 if let Some(ref handler) = self.handler {
                     if let Err(err) = self.config.set_app_theme(handler, theme.into()) {
                         log::error!("Failed to set app theme: {}", err);
@@ -312,25 +316,25 @@ where
             .unwrap_or("Unknown Page")
     }
 
-    fn update_title(&mut self) -> Task<Message> {
+    fn update_title(&mut self) -> Task<cosmic::app::Message<AppMessage>> {
         let header_title = self.active_page_title().to_owned();
         let window_title = format!("{header_title} — COSMIC Observatory");
         self.set_header_title(header_title);
         self.set_window_title(window_title)
     }
 
-    fn update_theme(&self) -> Task<Message> {
-        cosmic::app::command::set_theme(self.config.app_theme.theme())
+    fn update_theme(&self) -> cosmic::iced::Task<Message<AppMessage>> {
+        cosmic::app::command::set_theme::<AppMessage>(self.config.app_theme.theme())
     }
 
-    fn settings(&self) -> Element<Message> {
+    fn settings(&self) -> Element<AppMessage> {
         widget::scrollable(widget::settings::section().title(fl!("appearance")).add(
             widget::settings::item::item(
                 fl!("theme"),
                 widget::dropdown(
                     &self.app_themes,
                     Some(self.config.app_theme.into()),
-                    |theme| Message::AppTheme(theme),
+                    |theme| AppMessage::AppTheme(theme),
                 ),
             ),
         ))
@@ -338,6 +342,6 @@ where
     }
 }
 
-fn key_to_message(key: Key, _: Modifiers) -> Option<Message> {
-    Some(Message::KeyPressed(key))
+fn key_to_message(key: Key, _: Modifiers) -> Option<AppMessage> {
+    Some(AppMessage::KeyPressed(key))
 }

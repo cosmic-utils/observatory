@@ -1,4 +1,4 @@
-use crate::app::message::Message;
+use crate::app::message::AppMessage;
 use crate::fl;
 
 use cosmic::iced::{
@@ -16,10 +16,10 @@ pub enum ContextMenuAction {
 }
 
 impl widget::menu::Action for ContextMenuAction {
-    type Message = Message;
+    type Message = AppMessage;
     fn message(&self) -> Self::Message {
         match self {
-            ContextMenuAction::MulticoreView(visible) => Message::MulticoreView(visible.clone()),
+            ContextMenuAction::MulticoreView(visible) => AppMessage::MulticoreView(visible.clone()),
         }
     }
 }
@@ -43,14 +43,14 @@ impl super::Page for CpuResources {
     fn update(
         &mut self,
         sys: &sysinfo::System,
-        message: crate::app::message::Message,
-    ) -> cosmic::Task<crate::app::message::Message> {
+        message: crate::app::message::AppMessage,
+    ) -> cosmic::Task<cosmic::app::message::Message<crate::app::message::AppMessage>> {
         match message {
-            Message::Refresh => {
+            AppMessage::Refresh => {
                 self.update_usage_graphs(&sys);
                 self.update_metrics(&sys);
             }
-            Message::MulticoreView(checked) => {
+            AppMessage::MulticoreView(checked) => {
                 self.multicore_view = checked;
             }
             _ => {}
@@ -59,7 +59,7 @@ impl super::Page for CpuResources {
         Task::none()
     }
 
-    fn view(&self) -> Element<'_, Message> {
+    fn view(&self) -> Element<'_, AppMessage> {
         let theme = theme::active();
         let cosmic = theme.cosmic();
         let cpu_name = widget::container(
@@ -77,7 +77,7 @@ impl super::Page for CpuResources {
             .align_y(Vertical::Center),
         );
         let page =
-            widget::row::with_children::<Message>(vec![self.graph(), self.info_column(&cosmic)])
+            widget::row::with_children::<AppMessage>(vec![self.graph(), self.info_column(&cosmic)])
                 .spacing(cosmic.space_s());
 
         widget::container(
@@ -146,7 +146,7 @@ impl CpuResources {
         self.descriptor_count = String::from("TODO");
     }
 
-    fn context_menu(&self) -> Option<Vec<widget::menu::Tree<Message>>> {
+    fn context_menu(&self) -> Option<Vec<widget::menu::Tree<AppMessage>>> {
         Some(widget::menu::items(
             &HashMap::new(),
             vec![
@@ -164,7 +164,7 @@ impl CpuResources {
         ))
     }
 
-    fn graph(&self) -> Element<Message> {
+    fn graph(&self) -> Element<AppMessage> {
         // Usage graph
         let element = if self.multicore_view {
             let mut grid = widget::column().width(Length::Fill);
@@ -214,7 +214,7 @@ impl CpuResources {
         widget.into()
     }
 
-    fn info_column(&self, cosmic: &theme::CosmicTheme) -> Element<Message> {
+    fn info_column(&self, cosmic: &theme::CosmicTheme) -> Element<AppMessage> {
         let mut col = widget::column::with_capacity(10);
         col = col.push(
             widget::row::with_children(vec![

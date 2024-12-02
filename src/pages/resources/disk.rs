@@ -1,4 +1,4 @@
-use crate::app::message::Message;
+use crate::app::message::AppMessage;
 use crate::fl;
 
 use cosmic::iced::alignment::{Horizontal, Vertical};
@@ -18,9 +18,13 @@ pub struct DiskResources {
 }
 
 impl super::Page for DiskResources {
-    fn update(&mut self, sys: &sysinfo::System, message: Message) -> Task<Message> {
+    fn update(
+        &mut self,
+        sys: &sysinfo::System,
+        message: crate::app::message::AppMessage,
+    ) -> cosmic::Task<cosmic::app::message::Message<crate::app::message::AppMessage>> {
         match message {
-            Message::Refresh => {
+            AppMessage::Refresh => {
                 let read_sum: u64 = sys
                     .processes()
                     .iter()
@@ -50,7 +54,7 @@ impl super::Page for DiskResources {
         Task::none()
     }
 
-    fn view(&self) -> Element<'_, Message> {
+    fn view(&self) -> Element<'_, AppMessage> {
         let theme = theme::active();
         let cosmic = theme.cosmic();
         let mem_name = widget::container(
@@ -61,7 +65,7 @@ impl super::Page for DiskResources {
                 .align_y(Vertical::Center),
         );
 
-        let page = widget::row::with_children::<Message>(vec![
+        let page = widget::row::with_children::<AppMessage>(vec![
             widget::column()
                 .push(widget::text::text(fl!("read")))
                 .push(self.read_graph())
@@ -100,7 +104,7 @@ impl DiskResources {
         }
     }
 
-    fn read_graph(&self) -> Element<Message> {
+    fn read_graph(&self) -> Element<AppMessage> {
         // Usage graph
         widget::container(
             widget::canvas(crate::widgets::line_graph::LineGraph {
@@ -115,7 +119,7 @@ impl DiskResources {
         .into()
     }
 
-    fn write_graph(&self) -> Element<Message> {
+    fn write_graph(&self) -> Element<AppMessage> {
         // Usage graph
         widget::container(
             widget::canvas(crate::widgets::line_graph::LineGraph {
@@ -130,7 +134,7 @@ impl DiskResources {
         .into()
     }
 
-    fn info_column(&self, cosmic: &theme::CosmicTheme) -> Element<Message> {
+    fn info_column(&self, cosmic: &theme::CosmicTheme) -> Element<AppMessage> {
         let mut col = widget::column::with_capacity(10);
         col = col.push(
             widget::row::with_children(vec![

@@ -1,4 +1,4 @@
-use crate::app::message::Message;
+use crate::app::message::AppMessage;
 use crate::pages::Page;
 use cosmic::{theme, widget, Element, Task};
 
@@ -17,7 +17,6 @@ use cosmic::iced::alignment::{Horizontal, Vertical};
 use cosmic::iced::keyboard::Key;
 use cosmic::iced::{Background, Length};
 use cosmic::iced_widget::horizontal_rule;
-use sysinfo::System;
 
 pub struct Applications {
     output_state: OutputState,
@@ -34,13 +33,17 @@ pub struct ApplicationPage {
 }
 
 impl Page for ApplicationPage {
-    fn update(&mut self, _sys: &System, message: Message) -> Task<Message> {
+    fn update(
+        &mut self,
+        _sys: &sysinfo::System,
+        message: crate::app::message::AppMessage,
+    ) -> cosmic::Task<cosmic::app::message::Message<crate::app::message::AppMessage>> {
         let mut tasks = Vec::new();
         match message {
-            Message::Refresh => {
+            AppMessage::Refresh => {
                 self.event_queue.roundtrip(&mut self.app_data).unwrap();
             }
-            Message::ApplicationSelect(app_id) => {
+            AppMessage::ApplicationSelect(app_id) => {
                 if let Some(toplevel) = self
                     .app_data
                     .toplevel_info_state
@@ -50,12 +53,12 @@ impl Page for ApplicationPage {
                     self.active_toplevel = toplevel.1.cloned();
                 }
             }
-            Message::Key(_, key) => {
+            AppMessage::Key(_, key) => {
                 if key == Key::Character("k".into()) {
-                    tasks.push(cosmic::task::message(Message::ApplicationClose));
+                    tasks.push(cosmic::task::message(AppMessage::ApplicationClose));
                 }
             }
-            Message::ApplicationClose => {
+            AppMessage::ApplicationClose => {
                 if let Some(active_toplevel) = self.active_toplevel.take() {
                     if let Some(toplevel) = self
                         .app_data
@@ -78,7 +81,7 @@ impl Page for ApplicationPage {
         Task::batch(tasks)
     }
 
-    fn view(&self) -> Element<'_, Message> {
+    fn view(&self) -> Element<'_, AppMessage> {
         let theme = theme::active();
         let cosmic = theme.cosmic();
         let header = widget::container(widget::text::heading("Applications"))
@@ -114,7 +117,7 @@ impl Page for ApplicationPage {
                         .spacing(cosmic.space_xs())
                         .width(Length::Fill),
                     )
-                    .on_press(Message::ApplicationSelect(toplevel.app_id.clone()))
+                    .on_press(AppMessage::ApplicationSelect(toplevel.app_id.clone()))
                     .class(cosmic::style::Button::Custom {
                         active: Box::new(move |_, theme| {
                             let cosmic = theme.cosmic();
@@ -192,12 +195,12 @@ impl Page for ApplicationPage {
         .into()
     }
 
-    fn footer(&self) -> Option<Element<'_, Message>> {
+    fn footer(&self) -> Option<Element<'_, AppMessage>> {
         let theme = theme::active();
         let cosmic = theme.cosmic();
         let mut close_button = widget::button::suggested("Close");
         if self.active_toplevel.is_some() {
-            close_button = close_button.on_press(Message::ApplicationClose);
+            close_button = close_button.on_press(AppMessage::ApplicationClose);
         }
 
         Some(

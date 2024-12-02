@@ -29,11 +29,6 @@ features = [
     "about",
 ]
 
-[dependencies.cosmic-protocols]
-git = "https://github.com/pop-os/cosmic-protocols.git"
-default-features = false
-features = ["client"]
-
 [dependencies.i18n-embed]
 version = "0.15"
 features = ["fluent-system", "desktop-requester"]

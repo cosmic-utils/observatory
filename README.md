@@ -2,7 +2,6 @@
   <img src="res/icons/hicolor/scalable/apps/icon.svg" width="300" />
   <h1>Observatory</h1>
   <p>An in-development system monitor application for the COSMIC™ desktop environment</p>
-  <a href="https://flathub.org/apps/io.github.cosmic_utils.observatory"><img src="https://flathub.org/api/badge?svg&locale=en" /></a>
   
   <br/><br/>
 

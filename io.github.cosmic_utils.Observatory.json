@@ -12,7 +12,7 @@
     "--device=dri",
     "--filesystem=host",
     "--filesystem=xdg-config/cosmic:ro",
-    "--talk-name=com.system76.CosmicSettingsDaemon"
+    "--talk-name=org.freedesktop.Flatpak"
   ],
   "build-options": {
     "append-path": "/usr/lib/sdk/rust-stable/bin",
@@ -35,7 +35,7 @@
         {
           "type": "git",
           "url": "https://github.com/cosmic-utils/observatory.git",
-          "commit": "2ab370058863d7ef038d774586fc5fb1c20359fd"
+          "commit": "d8a40d7ac8ab5f52e9813e4e2c217c3077061476"
         },
         "cargo-sources.json"
       ]

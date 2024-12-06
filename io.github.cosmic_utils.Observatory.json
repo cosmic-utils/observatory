@@ -2,16 +2,16 @@
   "id": "io.github.cosmic_utils.observatory",
   "runtime": "org.freedesktop.Platform",
   "runtime-version": "24.08",
-  "base": "com.system76.Cosmic.BaseApp",
-  "base-version": "stable",
   "sdk": "org.freedesktop.Sdk",
   "sdk-extensions": ["org.freedesktop.Sdk.Extension.rust-stable"],
-  "command": "cosmic-ext-tweaks",
+  "command": "observatory",
   "finish-args": [
     "--share=ipc",
     "--socket=fallback-x11",
     "--socket=wayland",
     "--device=dri",
+    "--filesystem=host",
+    "--filesystem=xdg-config/cosmic:ro",
     "--talk-name=com.system76.CosmicSettingsDaemon"
   ],
   "build-options": {
@@ -26,13 +26,16 @@
       "buildsystem": "simple",
       "build-commands": [
         "cargo --offline build --release --verbose",
-        "just prefix=/app install "
+        "install -Dm0755 ./target/release/observatory -t /app/bin/",
+        "install -Dm0644 ./res/icons/hicolor/scalable/apps/icon.svg /app/share/icons/hicolor/scalable/apps/io.github.cosmic_utils.observatory.svg",
+        "install -Dm0644 ./res/metainfo.xml /app/share/metainfo/io.github.cosmic_utils.observatory.metainfo.xml",
+        "install -Dm0644 ./res/app.desktop /app/share/applications/io.github.cosmic_utils.observatory.desktop"
       ],
       "sources": [
         {
           "type": "git",
           "url": "https://github.com/cosmic-utils/observatory.git",
-          "commit": ""
+          "commit": "2ab370058863d7ef038d774586fc5fb1c20359fd"
         },
         "cargo-sources.json"
       ]

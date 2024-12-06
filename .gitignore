@@ -1,2 +1,5 @@
 /target
 /.idea
+/.flatpak-builder
+/cargo-sources.json
+/repo

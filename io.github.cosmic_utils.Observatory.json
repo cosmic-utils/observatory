@@ -26,15 +26,17 @@
       "buildsystem": "simple",
       "build-commands": [
         "cargo --offline build --release --verbose",
+        "install -Dm0755 ./target/release/observatory-daemon -t /app/bin/",
         "install -Dm0755 ./target/release/observatory -t /app/bin/",
-        "install -Dm0644 ./res/icons/hicolor/scalable/apps/icon.svg /app/share/icons/hicolor/scalable/apps/io.github.cosmic_utils.observatory.svg",
-        "install -Dm0644 ./res/metainfo.xml /app/share/metainfo/io.github.cosmic_utils.observatory.metainfo.xml",
-        "install -Dm0644 ./res/app.desktop /app/share/applications/io.github.cosmic_utils.observatory.desktop"
+        "install -Dm0644 ./observatory/res/icons/hicolor/scalable/apps/icon.svg /app/share/icons/hicolor/scalable/apps/io.github.cosmic_utils.observatory.svg",
+        "install -Dm0644 ./observatory/res/metainfo.xml /app/share/metainfo/io.github.cosmic_utils.observatory.metainfo.xml",
+        "install -Dm0644 ./observatory/res/app.desktop /app/share/applications/io.github.cosmic_utils.observatory.desktop"
       ],
       "sources": [
         {
           "type": "git",
           "url": "https://github.com/cosmic-utils/observatory.git",
+          "branch": "flatpak-testing",
           "commit": "b8b33e79ea0f5eacac38e339444f5792d649d200"
         },
         "cargo-sources.json"

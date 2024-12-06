@@ -1,6 +1,6 @@
 fn main() {
-    let paths = std::path::Path::new("/proc");
+    let paths = std::fs::read_dir("/proc").unwrap();
     for path in paths {
-        println!("{}", path);
+        println!("{}", path.unwrap().path().display());
     }
 }

@@ -37,7 +37,7 @@
           "type": "git",
           "url": "https://github.com/cosmic-utils/observatory.git",
           "branch": "testing-flatpak",
-          "commit": "b6f72f6af5394fc2bc9678d79fc5c51166bfdc1d"
+          "commit": "8e33cca37e8071854ed0862bb96212229fd4ac9a"
         },
         "cargo-sources.json"
       ]

@@ -1,3 +1,6 @@
 fn main() {
-    println!("Hello, world!");
+    let paths = std::path::Path::new("/proc");
+    for path in paths {
+        println!("{}", path);
+    }
 }

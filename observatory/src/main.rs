@@ -6,7 +6,7 @@ mod pages;
 mod widgets;
 
 fn main() -> cosmic::iced::Result {
-    let command = std::process::Command::new("flatpak-spawn").arg("observatory-daemon").output();
+    let command = std::process::Command::new("flatpak-spawn").arg("--host").arg("observatory-daemon").output();
     if let Ok(output) = command {
         println!("{}", String::from_utf8(output.stdout).unwrap());
     } else {

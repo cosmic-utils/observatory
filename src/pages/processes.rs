@@ -9,7 +9,7 @@ use cosmic::{
     iced::{alignment::Vertical, Length},
     widget, Element,
 };
-
+use crate::system_info::SystemInfo;
 pub use super::Page;
 
 pub struct ProcessPage {
@@ -24,7 +24,7 @@ pub struct ProcessPage {
 impl Page for ProcessPage {
     fn update(
         &mut self,
-        sys: &sysinfo::System,
+        sys: &SystemInfo,
         message: crate::app::message::AppMessage,
     ) -> cosmic::Task<cosmic::app::message::Message<crate::app::message::AppMessage>> {
         let mut tasks = vec![];

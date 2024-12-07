@@ -8,6 +8,7 @@ use crate::fl;
 
 use crate::pages::Page;
 use cosmic::{iced::Alignment, theme, widget, Element, Task};
+use crate::system_info::SystemInfo;
 
 pub struct ResourcePage {
     tab_model: widget::segmented_button::SingleSelectModel,
@@ -16,7 +17,7 @@ pub struct ResourcePage {
 impl Page for ResourcePage {
     fn update(
         &mut self,
-        sys: &sysinfo::System,
+        sys: &SystemInfo,
         message: crate::app::message::AppMessage,
     ) -> cosmic::Task<cosmic::app::message::Message<crate::app::message::AppMessage>> {
         let mut tasks = Vec::new();

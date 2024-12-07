@@ -9,6 +9,7 @@ use cosmic::iced::{
 use cosmic::{theme, widget, Element, Task};
 use std::collections::{HashMap, VecDeque};
 use sysinfo::System;
+use crate::system_info::SystemInfo;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ContextMenuAction {
@@ -42,7 +43,7 @@ pub struct CpuResources {
 impl super::Page for CpuResources {
     fn update(
         &mut self,
-        sys: &sysinfo::System,
+        sys: &SystemInfo,
         message: crate::app::message::AppMessage,
     ) -> cosmic::Task<cosmic::app::message::Message<crate::app::message::AppMessage>> {
         match message {

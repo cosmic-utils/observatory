@@ -7,12 +7,12 @@ pub enum AppMessage {
     Refresh,
     KeyPressed(Key),
 
-    ApplicationSelect(String),
+    ApplicationSelect(Option<u32>),
     ApplicationClose,
 
     ProcessTermActive,
     ProcessKillActive,
-    ProcessClick(Option<sysinfo::Pid>),
+    ProcessClick(Option<u32>),
     ProcessCategoryClick(u8),
     MulticoreView(bool),
 

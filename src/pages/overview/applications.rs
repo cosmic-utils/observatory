@@ -17,6 +17,7 @@ use cosmic::iced::alignment::{Horizontal, Vertical};
 use cosmic::iced::keyboard::Key;
 use cosmic::iced::{Background, Length};
 use cosmic::iced_widget::horizontal_rule;
+use crate::system_info::SystemInfo;
 
 pub struct Applications {
     output_state: OutputState,
@@ -35,7 +36,7 @@ pub struct ApplicationPage {
 impl Page for ApplicationPage {
     fn update(
         &mut self,
-        _sys: &sysinfo::System,
+        sys: &SystemInfo,
         message: crate::app::message::AppMessage,
     ) -> cosmic::Task<cosmic::app::message::Message<crate::app::message::AppMessage>> {
         let mut tasks = Vec::new();

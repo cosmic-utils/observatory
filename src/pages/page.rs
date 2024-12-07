@@ -1,7 +1,9 @@
+use crate::system_info::SystemInfo;
+
 pub trait Page {
     fn update(
         &mut self,
-        sys: &sysinfo::System,
+        sys: &SystemInfo,
         message: crate::app::message::AppMessage,
     ) -> cosmic::Task<cosmic::app::message::Message<crate::app::message::AppMessage>>;
 

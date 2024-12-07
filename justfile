@@ -10,6 +10,9 @@ share-dir := base-dir / 'share'
 bin-src := 'target' / 'release' / name
 bin-dst := base-dir / 'bin' / name
 
+dae-src := 'src' / 'observatory-daemon' / 'target' / 'release' / 'observatory-daemon'
+dae-dst := base-dir / 'bin' / 'observatory-daemon'
+
 desktop := appid + '.desktop'
 desktop-src := 'res' / desktop
 desktop-dst := share-dir / 'applications' / desktop
@@ -63,6 +66,9 @@ install:
     install -Dm0644 res/app.desktop {{desktop-dst}}
     install -Dm0644 {{icon-svg-src}} {{icon-svg-dst}}
     install -Dm0644 res/metainfo.xml {{metainfo-dst}}
+
+install-daemon:
+    install -Dm0755 {{dae-src}} {{dae-dst}}
 
 # Uninstalls installed files
 uninstall:

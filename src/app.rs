@@ -8,7 +8,7 @@ pub mod message;
 use crate::core::config::ObservatoryConfig;
 use crate::core::icons;
 use crate::fl;
-use crate::pages::{self, overview, processes, resources};
+use crate::pages::{self, overview/*, processes, resources*/};
 use action::Action;
 use bindings::key_binds;
 use context::ContextPage;
@@ -26,7 +26,6 @@ pub use cosmic::{executor, ApplicationExt, Element};
 use message::AppMessage;
 use std::any::TypeId;
 use std::collections::HashMap;
-use sysinfo::{ProcessRefreshKind, ProcessesToUpdate};
 
 /// The [`App`] stores application-specific state.
 pub struct App {
@@ -39,7 +38,7 @@ pub struct App {
     modifiers: Modifiers,
     key_binds: HashMap<KeyBind, Action>,
     context_page: ContextPage,
-    sys: sysinfo::System,
+    sys_info: Option<crate::system_info::SystemInfo>
 }
 
 /// Implement [`cosmic::Application`] to integrate with COSMIC.
@@ -72,19 +71,17 @@ impl cosmic::Application for App {
             .text("Overview")
             .icon(icons::get_icon("user-home-symbolic", 18))
             .data(Box::new(overview::OverviewPage::new()) as Box<dyn pages::Page>);
-        nav_model
-            .insert()
-            .text("Resources")
-            .icon(icons::get_icon("speedometer-symbolic", 18))
-            .data(Box::new(resources::ResourcePage::new()) as Box<dyn pages::Page>);
-        nav_model
-            .insert()
-            .text("Processes")
-            .icon(icons::get_icon("view-list-symbolic", 18))
-            .data(Box::new(processes::ProcessPage::new()) as Box<dyn pages::Page>);
+        // nav_model
+        //     .insert()
+        //     .text("Resources")
+        //     .icon(icons::get_icon("speedometer-symbolic", 18))
+        //     .data(Box::new(resources::ResourcePage::new()) as Box<dyn pages::Page>);
+        // nav_model
+        //     .insert()
+        //     .text("Processes")
+        //     .icon(icons::get_icon("view-list-symbolic", 18))
+        //     .data(Box::new(processes::ProcessPage::new()) as Box<dyn pages::Page>);
         nav_model.activate_position(0);
-
-        let sys = sysinfo::System::new_all();
 
         let (config, handler) = (
             ObservatoryConfig::config(),
@@ -121,7 +118,7 @@ impl cosmic::Application for App {
             modifiers: Modifiers::empty(),
             key_binds: key_binds(),
             context_page: ContextPage::Settings,
-            sys,
+            sys_info: Some(crate::system_info::SystemInfo::new())
         };
 
         let command = Task::batch([
@@ -234,16 +231,6 @@ impl cosmic::Application for App {
     fn update(&mut self, message: Self::Message) -> Task<cosmic::app::Message<AppMessage>> {
         let mut tasks = vec![];
         match message {
-            AppMessage::Refresh => {
-                let sys = &mut self.sys;
-                sys.refresh_cpu_all();
-                sys.refresh_memory();
-                sys.refresh_processes_specifics(
-                    ProcessesToUpdate::All,
-                    true,
-                    ProcessRefreshKind::everything(),
-                );
-            }
             AppMessage::SystemThemeChanged => tasks.push(self.update_theme()),
             AppMessage::Open(ref url) => {
                 if let Err(err) = open::that_detached(url) {
@@ -287,7 +274,10 @@ impl cosmic::Application for App {
         for entity in entities {
             let page = self.nav_model.data_mut::<Box<dyn pages::Page>>(entity);
             if let Some(page) = page {
-                tasks.push(page.update(&self.sys, message.clone()));
+                if let Some(sys_info) = &self.sys_info {
+                    tasks.push(page.update(sys_info, message.clone()));
+
+                }
             }
         }
 

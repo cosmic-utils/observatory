@@ -1,0 +1,13 @@
+diff --git a/src/extract_gpuinfo_amdgpu.c b/src/extract_gpuinfo_amdgpu.c
+index ef5b635..b96a5fa 100644
+--- a/src/extract_gpuinfo_amdgpu.c
++++ b/src/extract_gpuinfo_amdgpu.c
+@@ -57,7 +57,7 @@ const char *amdgpu_parse_marketing_name(struct amdgpu_gpu_info *info);
+ 
+ // Local function pointers to DRM interface
+ static typeof(drmGetDevices) *_drmGetDevices;
+-static typeof(drmGetDevices2) *_drmGetDevices2;
++static typeof(int(uint32_t, drmDevicePtr *, int)) *_drmGetDevices2;
+ static typeof(drmFreeDevices) *_drmFreeDevices;
+ static typeof(drmGetVersion) *_drmGetVersion;
+ static typeof(drmFreeVersion) *_drmFreeVersion;

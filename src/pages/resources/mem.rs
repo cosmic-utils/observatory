@@ -6,6 +6,7 @@ use cosmic::iced::Length;
 use cosmic::iced_widget::horizontal_rule;
 use cosmic::{theme, widget, Element, Task};
 use std::collections::VecDeque;
+use crate::system_info::SystemInfo;
 
 pub struct MemResources {
     mem_usage_history: VecDeque<f32>,
@@ -20,7 +21,7 @@ pub struct MemResources {
 impl super::Page for MemResources {
     fn update(
         &mut self,
-        sys: &sysinfo::System,
+        sys: &SystemInfo,
         message: crate::app::message::AppMessage,
     ) -> cosmic::Task<cosmic::app::message::Message<crate::app::message::AppMessage>> {
         match message {

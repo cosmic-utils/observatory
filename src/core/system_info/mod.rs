@@ -5,6 +5,7 @@ pub mod dbus_interface;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::fmt::{Debug, Formatter};
 use std::num::NonZeroU32;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -78,6 +79,18 @@ pub struct SystemInfo {
 
     child: RefCell<Option<std::process::Child>>,
 
+}
+
+impl Debug for SystemInfo {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SystemInfo").finish()
+    }
+}
+
+impl PartialEq for SystemInfo {
+    fn eq(&self, other: &Self) -> bool {
+        true
+    }
 }
 
 impl SystemInfo {

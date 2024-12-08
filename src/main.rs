@@ -1,10 +1,10 @@
-use core::settings;
-
 mod app;
 mod core;
 mod pages;
+mod style;
 mod widgets;
-mod system_info;
+
+use core::settings;
 
 fn main() -> cosmic::iced::Result {
     settings::init();

@@ -1,14 +1,16 @@
-mod action;
 pub mod bindings;
 pub mod context;
 pub mod flags;
-mod menu;
 pub mod message;
+
+mod action;
+mod menu;
 
 use crate::core::config::ObservatoryConfig;
 use crate::core::icons;
+use crate::core::system_info::SystemInfo;
 use crate::fl;
-use crate::pages::{self, overview/*, processes, resources*/};
+use crate::pages::{self, overview /*, processes, resources*/};
 use action::Action;
 use bindings::key_binds;
 use context::ContextPage;
@@ -26,6 +28,7 @@ pub use cosmic::{executor, ApplicationExt, Element};
 use message::AppMessage;
 use std::any::TypeId;
 use std::collections::HashMap;
+use std::sync::{Arc, RwLock};
 
 /// The [`App`] stores application-specific state.
 pub struct App {
@@ -38,7 +41,7 @@ pub struct App {
     modifiers: Modifiers,
     key_binds: HashMap<KeyBind, Action>,
     context_page: ContextPage,
-    sys_info: Option<crate::system_info::SystemInfo>
+    sys_info: Arc<RwLock<SystemInfo>>,
 }
 
 /// Implement [`cosmic::Application`] to integrate with COSMIC.
@@ -65,12 +68,16 @@ impl cosmic::Application for App {
 
     /// Creates the application, and optionally emits command on initialize.
     fn init(core: Core, _input: Self::Flags) -> (Self, cosmic::app::command::Task<Self::Message>) {
+        let sys_info = Arc::new(RwLock::new(SystemInfo::new()));
+
+        use crate::pages::Page;
+
         let mut nav_model = widget::nav_bar::Model::default();
         nav_model
             .insert()
             .text("Overview")
-            .icon(icons::get_icon("user-home-symbolic", 18))
-            .data(Box::new(overview::OverviewPage::new()) as Box<dyn pages::Page>);
+            .icon(icons::get_icon("user-home-symbolic".to_string(), 18))
+            .data(Box::new(overview::OverviewPage::new(Arc::clone(&sys_info))) as Box<dyn Page>);
         // nav_model
         //     .insert()
         //     .text("Resources")
@@ -118,12 +125,12 @@ impl cosmic::Application for App {
             modifiers: Modifiers::empty(),
             key_binds: key_binds(),
             context_page: ContextPage::Settings,
-            sys_info: Some(crate::system_info::SystemInfo::new())
+            sys_info,
         };
 
         let command = Task::batch([
             app.update_title(),
-            cosmic::task::message(cosmic::app::message::app(AppMessage::Refresh)),
+            cosmic::task::message(cosmic::app::message::app(AppMessage::SysInfoRefresh)),
         ]);
         (app, command)
     }
@@ -176,7 +183,7 @@ impl cosmic::Application for App {
 
     fn subscription(&self) -> cosmic::iced::Subscription<AppMessage> {
         let update_clock = cosmic::iced::time::every(cosmic::iced::time::Duration::from_secs(1))
-            .map(|_| AppMessage::Refresh);
+            .map(|_| AppMessage::SysInfoRefresh);
         let key_press =
             cosmic::iced_winit::graphics::futures::keyboard::on_key_press(key_to_message);
 
@@ -274,10 +281,7 @@ impl cosmic::Application for App {
         for entity in entities {
             let page = self.nav_model.data_mut::<Box<dyn pages::Page>>(entity);
             if let Some(page) = page {
-                if let Some(sys_info) = &self.sys_info {
-                    tasks.push(page.update(sys_info, message.clone()));
-
-                }
+                tasks.push(page.update(message.clone()));
             }
         }
 

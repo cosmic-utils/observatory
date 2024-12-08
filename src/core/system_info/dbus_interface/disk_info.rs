@@ -123,21 +123,16 @@ impl ReadAll for DiskInfoVec {
 
 impl<'a> Get<'a> for DiskInfoVec {
     fn get(i: &mut Iter<'a>) -> Option<Self> {
-
         let mut result = vec![];
 
         match Iterator::next(i) {
             None => {
-                log::error!(
-                    
-                    "Failed to get Vec<DiskInfo>: Expected '0: ARRAY', got None",
-                );
+                log::error!("Failed to get Vec<DiskInfo>: Expected '0: ARRAY', got None",);
                 return None;
             }
             Some(arg) => match arg.as_iter() {
                 None => {
                     log::error!(
-                        
                         "Failed to get Vec<DiskInfo>: Expected '0: ARRAY', got {:?}",
                         arg.arg_type(),
                     );
@@ -150,7 +145,6 @@ impl<'a> Get<'a> for DiskInfoVec {
                         let mut i = match i.as_iter() {
                             None => {
                                 log::error!(
-                                    
                                     "Failed to get DiskInfo: Expected '0: STRUCT', got None",
                                 );
                                 continue;
@@ -161,16 +155,12 @@ impl<'a> Get<'a> for DiskInfoVec {
 
                         this.id = match Iterator::next(disk_info) {
                             None => {
-                                log::error!(
-                                    
-                                    "Failed to get DiskInfo: Expected '0: s', got None",
-                                );
+                                log::error!("Failed to get DiskInfo: Expected '0: s', got None",);
                                 continue;
                             }
                             Some(arg) => match arg.as_str() {
                                 None => {
                                     log::error!(
-                                        
                                         "Failed to get DiskInfo: Expected '0: s', got {:?}",
                                         arg.arg_type(),
                                     );
@@ -182,16 +172,12 @@ impl<'a> Get<'a> for DiskInfoVec {
 
                         this.model = match Iterator::next(disk_info) {
                             None => {
-                                log::error!(
-                                    
-                                    "Failed to get DiskInfo: Expected '1: s', got None",
-                                );
+                                log::error!("Failed to get DiskInfo: Expected '1: s', got None",);
                                 continue;
                             }
                             Some(arg) => match arg.as_str() {
                                 None => {
                                     log::error!(
-                                        
                                         "Failed to get DiskInfo: Expected '1: s', got {:?}",
                                         arg.arg_type(),
                                     );
@@ -203,16 +189,12 @@ impl<'a> Get<'a> for DiskInfoVec {
 
                         this.r#type = match Iterator::next(disk_info) {
                             None => {
-                                log::error!(
-                                    
-                                    "Failed to get DiskInfo: Expected '2: y', got None",
-                                );
+                                log::error!("Failed to get DiskInfo: Expected '2: y', got None",);
                                 continue;
                             }
                             Some(arg) => match arg.as_u64() {
                                 None => {
                                     log::error!(
-                                        
                                         "Failed to get DiskInfo: Expected '2: y', got {:?}",
                                         arg.arg_type(),
                                     );
@@ -233,16 +215,12 @@ impl<'a> Get<'a> for DiskInfoVec {
 
                         this.capacity = match Iterator::next(disk_info) {
                             None => {
-                                log::error!(
-                                    
-                                    "Failed to get DiskInfo: Expected '3: t', got None",
-                                );
+                                log::error!("Failed to get DiskInfo: Expected '3: t', got None",);
                                 continue;
                             }
                             Some(arg) => match arg.as_u64() {
                                 None => {
                                     log::error!(
-                                        
                                         "Failed to get DiskInfo: Expected '3: t', got {:?}",
                                         arg.arg_type(),
                                     );
@@ -254,16 +232,12 @@ impl<'a> Get<'a> for DiskInfoVec {
 
                         this.formatted = match Iterator::next(disk_info) {
                             None => {
-                                log::error!(
-                                    
-                                    "Failed to get DiskInfo: Expected '4: t', got None",
-                                );
+                                log::error!("Failed to get DiskInfo: Expected '4: t', got None",);
                                 continue;
                             }
                             Some(arg) => match arg.as_u64() {
                                 None => {
                                     log::error!(
-                                        
                                         "Failed to get DiskInfo: Expected '4: t', got {:?}",
                                         arg.arg_type(),
                                     );
@@ -275,16 +249,12 @@ impl<'a> Get<'a> for DiskInfoVec {
 
                         this.system_disk = match Iterator::next(disk_info) {
                             None => {
-                                log::error!(
-                                    
-                                    "Failed to get DiskInfo: Expected '5: b', got None",
-                                );
+                                log::error!("Failed to get DiskInfo: Expected '5: b', got None",);
                                 continue;
                             }
                             Some(arg) => match arg.as_u64() {
                                 None => {
                                     log::error!(
-                                        
                                         "Failed to get DiskInfo: Expected '5: b', got {:?}",
                                         arg.arg_type(),
                                     );
@@ -299,16 +269,12 @@ impl<'a> Get<'a> for DiskInfoVec {
 
                         this.busy_percent = match Iterator::next(disk_info) {
                             None => {
-                                log::error!(
-                                    
-                                    "Failed to get DiskInfo: Expected '6: d', got None",
-                                );
+                                log::error!("Failed to get DiskInfo: Expected '6: d', got None",);
                                 continue;
                             }
                             Some(arg) => match arg.as_f64() {
                                 None => {
                                     log::error!(
-                                        
                                         "Failed to get DiskInfo: Expected '6: d', got {:?}",
                                         arg.arg_type(),
                                     );
@@ -320,16 +286,12 @@ impl<'a> Get<'a> for DiskInfoVec {
 
                         this.response_time_ms = match Iterator::next(disk_info) {
                             None => {
-                                log::error!(
-                                    
-                                    "Failed to get DiskInfo: Expected '7: d', got None",
-                                );
+                                log::error!("Failed to get DiskInfo: Expected '7: d', got None",);
                                 continue;
                             }
                             Some(arg) => match arg.as_f64() {
                                 None => {
                                     log::error!(
-                                        
                                         "Failed to get DiskInfo: Expected '7: d', got {:?}",
                                         arg.arg_type(),
                                     );
@@ -341,16 +303,12 @@ impl<'a> Get<'a> for DiskInfoVec {
 
                         this.read_speed = match Iterator::next(disk_info) {
                             None => {
-                                log::error!(
-                                    
-                                    "Failed to get DiskInfo: Expected '8: t', got None",
-                                );
+                                log::error!("Failed to get DiskInfo: Expected '8: t', got None",);
                                 continue;
                             }
                             Some(arg) => match arg.as_u64() {
                                 None => {
                                     log::error!(
-                                        
                                         "Failed to get DiskInfo: Expected '8: t', got {:?}",
                                         arg.arg_type(),
                                     );
@@ -362,16 +320,12 @@ impl<'a> Get<'a> for DiskInfoVec {
 
                         this.write_speed = match Iterator::next(disk_info) {
                             None => {
-                                log::error!(
-                                    
-                                    "Failed to get DiskInfo: Expected '9: t', got None",
-                                );
+                                log::error!("Failed to get DiskInfo: Expected '9: t', got None",);
                                 continue;
                             }
                             Some(arg) => match arg.as_u64() {
                                 None => {
                                     log::error!(
-                                        
                                         "Failed to get DiskInfo: Expected '9: t', got {:?}",
                                         arg.arg_type(),
                                     );

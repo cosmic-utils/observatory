@@ -10,7 +10,7 @@ use crate::core::config::ObservatoryConfig;
 use crate::core::icons;
 use crate::core::system_info::SystemInfo;
 use crate::fl;
-use crate::pages::{self, overview /*, processes, resources*/};
+use crate::pages::{self, overview, resources};
 use action::Action;
 use bindings::key_binds;
 use context::ContextPage;
@@ -75,14 +75,14 @@ impl cosmic::Application for App {
         let mut nav_model = widget::nav_bar::Model::default();
         nav_model
             .insert()
-            .text("Overview")
+            .text(fl!("overview-page"))
             .icon(icons::get_icon("user-home-symbolic".to_string(), 18))
             .data(Box::new(overview::OverviewPage::new(Arc::clone(&sys_info))) as Box<dyn Page>);
-        // nav_model
-        //     .insert()
-        //     .text("Resources")
-        //     .icon(icons::get_icon("speedometer-symbolic", 18))
-        //     .data(Box::new(resources::ResourcePage::new()) as Box<dyn pages::Page>);
+        nav_model
+            .insert()
+            .text(fl!("resource-page"))
+            .icon(icons::get_icon("speedometer-symbolic".to_string(), 18))
+            .data(Box::new(resources::ResourcePage::new(Arc::clone(&sys_info))) as Box<dyn Page>);
         // nav_model
         //     .insert()
         //     .text("Processes")

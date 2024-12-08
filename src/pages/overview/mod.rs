@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
 use crate::core::system_info::{App, SystemInfo};
+use crate::fl;
 use cosmic::{cosmic_theme, iced, theme, widget, Element, Task};
 
 pub struct OverviewPage {
@@ -141,7 +142,7 @@ impl super::Page for OverviewPage {
 
         let statistic_section = widget::column()
             .spacing(cosmic.space_xs())
-            .push(widget::text::heading("Resource Overview"))
+            .push(widget::text::title4(fl!("resource-overview")))
             .push(iced::widget::horizontal_rule(1))
             .push(statistics);
 
@@ -175,7 +176,7 @@ impl super::Page for OverviewPage {
         }
         let app_section = widget::column()
             .spacing(cosmic.space_xs())
-            .push(widget::text::heading("Applications"))
+            .push(widget::text::title4(fl!("applications")))
             .push(iced::widget::horizontal_rule(1))
             .push(apps_list);
 

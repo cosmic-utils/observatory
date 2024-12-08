@@ -10,7 +10,7 @@ use crate::core::config::ObservatoryConfig;
 use crate::core::icons;
 use crate::core::system_info::SystemInfo;
 use crate::fl;
-use crate::pages::{self, overview, resources};
+use crate::pages::{self, overview, processes, resources};
 use action::Action;
 use bindings::key_binds;
 use context::ContextPage;
@@ -83,11 +83,11 @@ impl cosmic::Application for App {
             .text(fl!("resource-page"))
             .icon(icons::get_icon("speedometer-symbolic".to_string(), 18))
             .data(Box::new(resources::ResourcePage::new(Arc::clone(&sys_info))) as Box<dyn Page>);
-        // nav_model
-        //     .insert()
-        //     .text("Processes")
-        //     .icon(icons::get_icon("view-list-symbolic", 18))
-        //     .data(Box::new(processes::ProcessPage::new()) as Box<dyn pages::Page>);
+        nav_model
+            .insert()
+            .text(fl!("process-page"))
+            .icon(icons::get_icon("view-list-symbolic".to_string(), 18))
+            .data(Box::new(processes::ProcessPage::new(Arc::clone(&sys_info))) as Box<dyn Page>);
         nav_model.activate_position(0);
 
         let (config, handler) = (

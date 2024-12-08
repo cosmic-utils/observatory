@@ -1,8 +1,12 @@
 pub mod mem_info;
 //mod net_info;
-mod proc_info;
 pub mod dbus_interface;
+pub mod proc_info;
 
+use dbus::blocking::{
+    stdintf::{org_freedesktop_dbus::Peer, org_freedesktop_dbus::Properties},
+    LocalConnection, Proxy,
+};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt::{Debug, Formatter};
@@ -10,14 +14,9 @@ use std::num::NonZeroU32;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::time::Duration;
-use dbus::blocking::{
-    stdintf::{org_freedesktop_dbus::Peer, org_freedesktop_dbus::Properties},
-    LocalConnection, Proxy,
-};
 
 pub use dbus_interface::*;
 use lazy_static::lazy_static;
-
 
 macro_rules! dbus_call {
     ($self: ident, $method: tt, $dbus_method_name: literal $(,$args:ident)*) => {{
@@ -71,14 +70,12 @@ macro_rules! dbus_call {
     }};
 }
 
-
 pub struct SystemInfo {
     #[allow(dead_code)]
     connection: Rc<LocalConnection>,
     proxy: Proxy<'static, Rc<LocalConnection>>,
 
     child: RefCell<Option<std::process::Child>>,
-
 }
 
 impl Debug for SystemInfo {
@@ -99,10 +96,16 @@ impl SystemInfo {
             log::error!("Failed to connect to D-Bus: {}", e.to_string());
             panic!();
         }));
-        let proxy = Proxy::new(OD_INTERFACE_NAME, OD_OBJECT_PATH, Duration::from_millis(1000), connection.clone());
+        let proxy = Proxy::new(
+            OD_INTERFACE_NAME,
+            OD_OBJECT_PATH,
+            Duration::from_millis(1000),
+            connection.clone(),
+        );
 
         Self {
-            connection, proxy,
+            connection,
+            proxy,
             child: RefCell::new(None),
         }
     }
@@ -126,10 +129,7 @@ impl SystemInfo {
         self.child.borrow_mut().replace(match command.spawn() {
             Ok(c) => c,
             Err(e) => {
-                log::error!(
-                    "Failed to spawn Gatherer process: {}",
-                    &e
-                );
+                log::error!("Failed to spawn Gatherer process: {}", &e);
                 panic!();
             }
         });
@@ -143,11 +143,7 @@ impl SystemInfo {
             match self.proxy.ping() {
                 Ok(()) => return,
                 Err(e) => {
-                    log::error!(
-                        "Call to Gatherer Ping method failed on try {}: {}",
-                        i,
-                        e,
-                    );
+                    log::error!("Call to Gatherer Ping method failed on try {}: {}", i, e,);
                 }
             }
             std::thread::sleep(Duration::from_millis(START_WAIT_TIME_MS / 2));
@@ -175,10 +171,7 @@ impl SystemInfo {
                         continue;
                     }
                     Err(e) => {
-                        log::error!(
-                            "Failed to wait for Gatherer process to stop: {}",
-                            &e
-                        );
+                        log::error!("Failed to wait for Gatherer process to stop: {}", &e);
 
                         panic!();
                     }
@@ -210,13 +203,9 @@ impl SystemInfo {
     }
 
     fn executable() -> String {
-
         let exe_simple = "observatory-daemon".to_owned();
 
-        log::debug!(
-            "Gatherer executable name: {}",
-            &exe_simple
-        );
+        log::debug!("Gatherer executable name: {}", &exe_simple);
 
         exe_simple
     }
@@ -228,9 +217,7 @@ impl SystemInfo {
             .proxy
             .set(OD_INTERFACE_NAME, "RefreshInterval", interval)
         {
-            log::error!(
-                "Failed to set RefreshInterval property: {e}"
-            );
+            log::error!("Failed to set RefreshInterval property: {e}");
         }
     }
 
@@ -239,9 +226,7 @@ impl SystemInfo {
             .proxy
             .set(OD_INTERFACE_NAME, "CoreCountAffectsPercentages", v)
         {
-            log::error!(
-                "Failed to set CoreCountAffectsPercentages property: {e}"
-            );
+            log::error!("Failed to set CoreCountAffectsPercentages property: {e}");
         }
     }
 
@@ -317,5 +302,4 @@ impl SystemInfo {
     pub fn get_service_logs(&self, service_name: &str, pid: Option<NonZeroU32>) -> Arc<str> {
         dbus_call!(self, get_service_logs, "GetServiceLogs", service_name, pid);
     }
-
 }

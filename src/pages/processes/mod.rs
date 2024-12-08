@@ -1,44 +1,123 @@
 mod category;
-mod process;
+//mod process;
 
-use crate::app::message::AppMessage;
-use category::{Category, CategoryList, Sort};
-use cosmic::iced_widget;
-use cosmic::{iced, Task};
-use cosmic::{
-    iced::{alignment::Vertical, Length},
-    widget, Element,
-};
-use crate::system_info::SystemInfo;
 pub use super::Page;
+use crate::app::message::AppMessage;
+use crate::core::system_info::{Process, SystemInfo};
+use category::{Category, CategoryList, Sort};
+
+use cosmic::{app::Task, cosmic_theme, iced, widget, Element};
+
+use std::collections::HashMap;
+use std::sync::{Arc, RwLock};
 
 pub struct ProcessPage {
     sort_data: (Category, Sort),
-    users: sysinfo::Users,
-    categories: CategoryList,
-    processes: process::ProcessList,
-    selected_process: Option<sysinfo::Pid>,
-    apps: Vec<cosmic::desktop::DesktopEntryData>,
+    process_map: HashMap<u32, Process>,
+    processes: Vec<(Process, cosmic::desktop::IconSource)>,
+    selected_process: Option<u32>,
+
+    core_count: f32,
+    memory: f32,
+
+    sys: Arc<RwLock<SystemInfo>>,
+}
+
+fn get_proc_name(process: &Process) -> &str {
+    if !process.exe.as_ref().is_empty() {
+        let entry_name = std::path::Path::new(process.exe.as_ref())
+            .file_name()
+            .map(|name| name.to_str().unwrap_or(process.name.as_ref()))
+            .unwrap_or(process.name.as_ref());
+        if entry_name.starts_with("wine") {
+            if process.cmd.is_empty() {
+                process.name.as_ref()
+            } else {
+                process.cmd[0]
+                    .as_ref()
+                    .split("\\")
+                    .last()
+                    .unwrap_or(process.name.as_ref())
+                    .split("/")
+                    .last()
+                    .unwrap_or(process.name.as_ref())
+            }
+        } else {
+            entry_name
+        }
+    } else {
+        process.name.as_ref()
+    }
+}
+
+fn process_sort(a: &Process, b: &Process, category: &Category) -> std::cmp::Ordering {
+    match category {
+        Category::Name => {
+            let mut ord = get_proc_name(b)
+                .to_lowercase()
+                .cmp(&get_proc_name(a).to_lowercase());
+            if ord == std::cmp::Ordering::Equal {
+                ord = process_sort(a, b, &Category::Pid);
+            }
+            ord
+        }
+        Category::Pid => a.pid.cmp(&b.pid),
+        Category::Cpu => {
+            let mut ord = a.usage_stats.cpu_usage.total_cmp(&b.usage_stats.cpu_usage);
+            if ord == std::cmp::Ordering::Equal {
+                ord = process_sort(a, b, &Category::Name);
+            }
+            ord
+        }
+        Category::Gpu => {
+            let mut ord = a.usage_stats.gpu_usage.total_cmp(&b.usage_stats.gpu_usage);
+            if ord == std::cmp::Ordering::Equal {
+                ord = process_sort(a, b, &Category::Name);
+            }
+            ord
+        }
+        Category::Memory => {
+            let mut ord = a
+                .usage_stats
+                .memory_usage
+                .total_cmp(&b.usage_stats.memory_usage);
+            if ord == std::cmp::Ordering::Equal {
+                ord = process_sort(a, b, &Category::Name);
+            }
+            ord
+        }
+        Category::Disk => {
+            let mut ord = a
+                .usage_stats
+                .disk_usage
+                .total_cmp(&b.usage_stats.disk_usage);
+            if ord == std::cmp::Ordering::Equal {
+                ord = process_sort(a, b, &Category::Name);
+            }
+            ord
+        }
+    }
 }
 
 impl Page for ProcessPage {
-    fn update(
-        &mut self,
-        sys: &SystemInfo,
-        message: crate::app::message::AppMessage,
-    ) -> cosmic::Task<cosmic::app::message::Message<crate::app::message::AppMessage>> {
+    fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
         let mut tasks = vec![];
         match message {
             AppMessage::ProcessTermActive => {
-                sys.process(self.selected_process.unwrap())
-                    .unwrap()
-                    .kill_with(sysinfo::Signal::Term)
-                    .unwrap();
-                self.selected_process = None;
+                if let Some(pid) = self.selected_process {
+                    if let Ok(sys) = self.sys.write() {
+                        sys.terminate_process(pid)
+                    }
+                    self.selected_process = None;
+                }
             }
             AppMessage::ProcessKillActive => {
-                sys.process(self.selected_process.unwrap()).unwrap().kill();
-                self.selected_process = None;
+                if let Some(pid) = self.selected_process {
+                    if let Ok(sys) = self.sys.write() {
+                        sys.kill_process(pid)
+                    }
+                    self.selected_process = None;
+                }
             }
             AppMessage::ProcessClick(pid) => {
                 if self.selected_process == pid {
@@ -56,10 +135,62 @@ impl Page for ProcessPage {
                 } else {
                     self.sort_data = (cat, Sort::Descending);
                 }
+                self.processes.sort_by(|a, b| match self.sort_data.1 {
+                    Sort::Ascending => process_sort(&a.0, &b.0, &self.sort_data.0),
+                    Sort::Descending => process_sort(&b.0, &a.0, &self.sort_data.0),
+                })
             }
-            AppMessage::Refresh => {
-                self.processes
-                    .update(&self.categories, sys, &self.apps, &self.users);
+            AppMessage::SysInfoRefresh => {
+                if let Ok(sys) = self.sys.read() {
+                    self.core_count = sys.cpu_static_info().logical_cpu_count as f32;
+                    self.memory = crate::core::system_info::mem_info::MemInfo::load()
+                        .unwrap()
+                        .mem_total as f32;
+
+                    self.process_map = sys.processes();
+                    self.processes = self
+                        .process_map
+                        .values()
+                        .cloned()
+                        .filter(|proc| {
+                            let mut current = proc.pid;
+                            loop {
+                                if let Some(process) = self.process_map.get(&current) {
+                                    if let Some(parent) = self.process_map.get(&process.parent) {
+                                        if parent.pid == 1 {
+                                            return true;
+                                        }
+                                        current = parent.pid;
+                                    } else {
+                                        return false;
+                                    }
+                                } else {
+                                    return false;
+                                }
+                            }
+                        })
+                        .map(|process| {
+                            let apps = sys.apps();
+                            let mut icon = cosmic::desktop::IconSource::default();
+                            for app in apps.values() {
+                                if let Some(app_icon) = app.icon.clone() {
+                                    if let Some(_) =
+                                        app.pids.iter().find(|pid| **pid == process.pid)
+                                    {
+                                        icon =
+                                            cosmic::desktop::IconSource::Name(app_icon.to_string());
+                                    }
+                                }
+                            }
+                            (process, icon)
+                        })
+                        .collect();
+
+                    self.processes.sort_by(|a, b| match self.sort_data.1 {
+                        Sort::Ascending => process_sort(&a.0, &b.0, &self.sort_data.0),
+                        Sort::Descending => process_sort(&b.0, &a.0, &self.sort_data.0),
+                    });
+                }
             }
             AppMessage::KeyPressed(key) => {
                 if key == iced::keyboard::Key::Named(iced::keyboard::key::Named::Escape) {
@@ -88,35 +219,103 @@ impl Page for ProcessPage {
 
     fn view(&self) -> Element<'_, AppMessage> {
         let theme = cosmic::theme::active();
+        let cosmic = theme.cosmic();
 
-        // The vertical column of process elements
-        let col = widget::column::with_children(vec![
-            self.categories.element(&theme, &self.sort_data),
-            iced_widget::horizontal_rule(1)
-                .width(Length::Fixed(800.))
-                .into(),
-        ]);
+        let mut header_row = widget::row();
+        for category in CategoryList::new().0 {
+            if self.sort_data.0 == category {
+                header_row = header_row.push(
+                    widget::button::custom(
+                        widget::row()
+                            .spacing(cosmic.space_xxs())
+                            .push(widget::text::heading(category.name()))
+                            .push(widget::icon::from_name(match self.sort_data.1 {
+                                Sort::Ascending => "pan-up-symbolic",
+                                Sort::Descending => "pan-down-symbolic",
+                            })),
+                    )
+                    .on_press(AppMessage::ProcessCategoryClick(category.index()))
+                    .class(cosmic::style::Button::HeaderBar)
+                    .width(category.width()),
+                )
+            } else {
+                header_row = header_row.push(
+                    widget::button::custom(widget::text::heading(category.name()))
+                        .on_press(AppMessage::ProcessCategoryClick(category.index()))
+                        .class(cosmic::style::Button::HeaderBar)
+                        .width(category.width()),
+                );
+            }
+        }
 
-        let process_column =
-            self.processes
-                .element(&theme, &self.selected_process, &self.sort_data);
-        // Push process rows into scrollable widget
-        let process_group_scroll = widget::context_menu(
-            iced_widget::Scrollable::with_direction(
-                process_column,
-                iced_widget::scrollable::Direction::Vertical(
-                    iced_widget::scrollable::Scrollbar::default(),
-                ),
+        let mut process_list = widget::column()
+            .spacing(cosmic.space_xs())
+            .width(iced::Length::Fill);
+        for process in &self.processes {
+            let is_selected = if let Some(selected) = self.selected_process {
+                selected == process.0.pid
+            } else {
+                false
+            };
+            process_list = process_list.push(
+                widget::button::custom(
+                    widget::row()
+                        .push(
+                            widget::container(
+                                widget::row()
+                                    .spacing(cosmic.space_xxs())
+                                    .push(process.1.as_cosmic_icon().size(24))
+                                    .push(widget::text::body(
+                                        get_proc_name(&process.0).to_string(),
+                                    )),
+                            )
+                            .width(Category::Name.width()),
+                        )
+                        .push(widget::container(
+                            widget::text::body(process.0.pid.to_string())
+                                .width(Category::Pid.width()),
+                        ))
+                        .push(
+                            widget::container(widget::text::body(format!(
+                                "{}%",
+                                (process.0.usage_stats.cpu_usage / self.core_count).round()
+                            )))
+                            .width(Category::Cpu.width()),
+                        )
+                        .push(
+                            widget::container(widget::text::body(format!(
+                                "{}%",
+                                (process.0.usage_stats.gpu_usage).round()
+                            )))
+                            .width(Category::Gpu.width()),
+                        )
+                        .push(
+                            widget::container(widget::text::body(bytes_to_size(
+                                process.0.usage_stats.memory_usage as usize,
+                            )))
+                            .width(Category::Memory.width()),
+                        )
+                        .push(
+                            widget::container(widget::text::body(bytes_to_speed(
+                                process.0.usage_stats.disk_usage as usize,
+                            )))
+                            .width(Category::Disk.width()),
+                        ),
+                )
+                .on_press(AppMessage::ProcessClick(Some(process.0.pid)))
+                .class(crate::style::button::ButtonStyle::ListElement(is_selected).into()),
             )
-            .width(Length::Fill),
-            ContextMenuAction::menu(),
-        );
+        }
 
-        widget::container(
-            col.push(process_group_scroll)
-                .width(Length::Fill)
-                .height(Length::Fill),
+        widget::layer_container(
+            widget::column()
+                .spacing(cosmic.space_xs())
+                .push(header_row)
+                .push(iced::widget::horizontal_rule(1))
+                .push(widget::scrollable(process_list)),
         )
+        .layer(cosmic_theme::Layer::Primary)
+        .padding([cosmic.space_s(), cosmic.space_m()])
         .into()
     }
 
@@ -125,7 +324,7 @@ impl Page for ProcessPage {
         let cosmic = theme.cosmic();
 
         let mut row = widget::row::with_capacity(4)
-            .align_y(Vertical::Center)
+            .align_y(iced::Alignment::Center)
             .spacing(cosmic.space_xs());
         row = row.push(widget::horizontal_space());
         if self.selected_process.is_some() {
@@ -149,18 +348,15 @@ impl Page for ProcessPage {
 }
 
 impl ProcessPage {
-    pub fn new() -> Self {
-        let users = sysinfo::Users::new_with_refreshed_list();
-        let categories = CategoryList::new();
-        let processes = process::ProcessList::new();
-        let apps = cosmic::desktop::load_applications(None, true);
+    pub fn new(sys: Arc<RwLock<SystemInfo>>) -> Self {
         Self {
             sort_data: (Category::Name, Sort::Descending),
-            users,
-            categories,
-            processes,
+            processes: Vec::new(),
+            process_map: HashMap::new(),
             selected_process: None,
-            apps,
+            core_count: 0.,
+            memory: 0.,
+            sys,
         }
     }
 }
@@ -174,7 +370,7 @@ enum ContextMenuAction {
 impl ContextMenuAction {
     fn menu<'a>() -> Option<Vec<widget::menu::Tree<'a, AppMessage>>> {
         Some(widget::menu::items(
-            &std::collections::HashMap::new(),
+            &HashMap::new(),
             vec![
                 widget::menu::Item::Button("Terminate", None, ContextMenuAction::Term),
                 widget::menu::Item::Divider,
@@ -191,5 +387,29 @@ impl widget::menu::Action for ContextMenuAction {
             ContextMenuAction::Kill => AppMessage::ProcessKillActive,
             ContextMenuAction::Term => AppMessage::ProcessTermActive,
         }
+    }
+}
+
+fn bytes_to_size(bytes: usize) -> String {
+    if bytes < 1024usize.pow(1) {
+        format!("{} B", bytes)
+    } else if bytes < 1024usize.pow(2) {
+        format!("{:.2} KiB", bytes as f64 / 1024f64.powf(1.))
+    } else if bytes < 1024usize.pow(3) {
+        format!("{:.2} MiB", bytes as f64 / 1024f64.powf(2.))
+    } else {
+        format!("{:.2} GiB", bytes as f64 / 1024f64.powf(3.))
+    }
+}
+
+fn bytes_to_speed(bytes: usize) -> String {
+    if bytes < 1024usize.pow(1) {
+        format!("{} B/s", bytes)
+    } else if bytes < 1024usize.pow(2) {
+        format!("{:.2} KiB/s", bytes as f64 / 1024f64.powf(1.))
+    } else if bytes < 1024usize.pow(3) {
+        format!("{:.2} MiB/s", bytes as f64 / 1024f64.powf(2.))
+    } else {
+        format!("{:.2} GiB/s", bytes as f64 / 1024f64.powf(3.))
     }
 }

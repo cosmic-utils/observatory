@@ -3723,6 +3723,7 @@ dependencies = [
  "open",
  "rust-embed",
  "serde",
+ "shlex",
  "static_assertions",
 ]
 

@@ -267,6 +267,8 @@ impl cosmic::Application for App {
                 if let Some(ref handler) = self.handler {
                     if let Err(err) = self.config.set_app_theme(handler, theme.into()) {
                         log::error!("Failed to set app theme: {}", err);
+                    } else {
+                        tasks.push(self.update_theme());
                     }
                 }
             }

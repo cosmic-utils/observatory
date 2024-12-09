@@ -36,10 +36,10 @@ pub use apps::{App, AppMap};
 pub use arc_str_vec::ArcStrVec;
 pub use cpu_dynamic_info::CpuDynamicInfo;
 pub use cpu_static_info::CpuStaticInfo;
-pub use disk_info::{DiskInfo, DiskInfoVec, DiskType};
+pub use disk_info::{DiskInfo, DiskInfoVec};
 pub use fan_info::{FanInfo, FanInfoVec};
 pub use gpu_dynamic_info::{GpuDynamicInfo, GpuDynamicInfoVec};
-pub use gpu_static_info::{GpuStaticInfo, GpuStaticInfoVec, OpenGLApi};
+pub use gpu_static_info::{GpuStaticInfo, GpuStaticInfoVec};
 pub use processes::{Process, ProcessMap, ProcessUsageStats};
 pub use service::{Service, ServiceMap};
 
@@ -80,6 +80,7 @@ impl TypeMismatchError {
 const_assert!(size_of::<TypeMismatchError>() == size_of::<dbus::arg::TypeMismatchError>());
 const_assert!(align_of::<TypeMismatchError>() == align_of::<dbus::arg::TypeMismatchError>());
 
+#[allow(dead_code)]
 pub trait Gatherer {
     fn get_cpu_static_info(&self) -> Result<CpuStaticInfo, dbus::Error>;
     fn get_cpu_dynamic_info(&self) -> Result<CpuDynamicInfo, dbus::Error>;
@@ -115,20 +116,17 @@ impl<'a> Gatherer for Proxy<'a, Rc<LocalConnection>> {
     }
 
     fn get_disks_info(&self) -> Result<Vec<DiskInfo>, dbus::Error> {
-        let res: Result<DiskInfoVec, _> =
-            self.method_call(OD_INTERFACE_NAME, "GetDisksInfo", ());
+        let res: Result<DiskInfoVec, _> = self.method_call(OD_INTERFACE_NAME, "GetDisksInfo", ());
         res.map(|v| v.into())
     }
 
     fn get_fans_info(&self) -> Result<Vec<FanInfo>, dbus::Error> {
-        let res: Result<FanInfoVec, _> =
-            self.method_call(OD_INTERFACE_NAME, "GetFansInfo", ());
+        let res: Result<FanInfoVec, _> = self.method_call(OD_INTERFACE_NAME, "GetFansInfo", ());
         res.map(|v| v.into())
     }
 
     fn get_gpu_list(&self) -> Result<Vec<Arc<str>>, dbus::Error> {
-        let res: Result<ArcStrVec, _> =
-            self.method_call(OD_INTERFACE_NAME, "GetGPUList", ());
+        let res: Result<ArcStrVec, _> = self.method_call(OD_INTERFACE_NAME, "GetGPUList", ());
         res.map(|v| v.into())
     }
 
@@ -150,23 +148,17 @@ impl<'a> Gatherer for Proxy<'a, Rc<LocalConnection>> {
     }
 
     fn get_processes(&self) -> Result<HashMap<u32, Process>, dbus::Error> {
-        let res: Result<ProcessMap, _> =
-            self.method_call(OD_INTERFACE_NAME, "GetProcesses", ());
+        let res: Result<ProcessMap, _> = self.method_call(OD_INTERFACE_NAME, "GetProcesses", ());
         res.map(|v| v.into())
     }
 
     fn get_services(&self) -> Result<HashMap<Arc<str>, Service>, dbus::Error> {
-        let res: Result<ServiceMap, _> =
-            self.method_call(OD_INTERFACE_NAME, "GetServices", ());
+        let res: Result<ServiceMap, _> = self.method_call(OD_INTERFACE_NAME, "GetServices", ());
         res.map(|v| v.into())
     }
 
     fn terminate_process(&self, process_id: u32) -> Result<(), dbus::Error> {
-        self.method_call(
-            OD_INTERFACE_NAME,
-            "TerminateProcess",
-            (process_id,),
-        )
+        self.method_call(OD_INTERFACE_NAME, "TerminateProcess", (process_id,))
     }
 
     fn kill_process(&self, process_id: u32) -> Result<(), dbus::Error> {
@@ -178,11 +170,7 @@ impl<'a> Gatherer for Proxy<'a, Rc<LocalConnection>> {
     }
 
     fn disable_service(&self, service_name: &str) -> Result<(), dbus::Error> {
-        self.method_call(
-            OD_INTERFACE_NAME,
-            "DisableService",
-            (service_name,),
-        )
+        self.method_call(OD_INTERFACE_NAME, "DisableService", (service_name,))
     }
 
     fn start_service(&self, service_name: &str) -> Result<(), dbus::Error> {
@@ -194,11 +182,7 @@ impl<'a> Gatherer for Proxy<'a, Rc<LocalConnection>> {
     }
 
     fn restart_service(&self, service_name: &str) -> Result<(), dbus::Error> {
-        self.method_call(
-            OD_INTERFACE_NAME,
-            "RestartService",
-            (service_name,),
-        )
+        self.method_call(OD_INTERFACE_NAME, "RestartService", (service_name,))
     }
 
     fn get_service_logs(

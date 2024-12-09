@@ -198,7 +198,7 @@ impl super::Page for OverviewPage {
     }
 
     fn footer(&self) -> Option<Element<AppMessage>> {
-        if let Some(selected_app) = &self.selected_app {
+        if let Some(_) = &self.selected_app {
             let theme = theme::active();
             let cosmic = theme.cosmic();
             Some(

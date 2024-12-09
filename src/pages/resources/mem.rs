@@ -144,14 +144,6 @@ impl MemResources {
     }
 }
 
-fn calc_usage_percentage(used: usize, total: usize) -> f64 {
-    if total == 0 {
-        0.0
-    } else {
-        (used as f64 / total as f64) * 100.0
-    }
-}
-
 fn format_size(size: usize) -> String {
     const KB: usize = 1024;
     const MB: usize = 1024 * KB;

@@ -1,7 +1,4 @@
-use crate::app::message::AppMessage;
-use cosmic::iced::alignment::{Horizontal, Vertical};
 use cosmic::iced::Length;
-use cosmic::{theme, widget, Element};
 
 pub struct CategoryList(pub Vec<Category>);
 

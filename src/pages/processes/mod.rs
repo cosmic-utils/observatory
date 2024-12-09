@@ -361,35 +361,6 @@ impl ProcessPage {
     }
 }
 
-#[derive(PartialEq, Clone, Copy, Eq, Debug)]
-enum ContextMenuAction {
-    Kill,
-    Term,
-}
-
-impl ContextMenuAction {
-    fn menu<'a>() -> Option<Vec<widget::menu::Tree<'a, AppMessage>>> {
-        Some(widget::menu::items(
-            &HashMap::new(),
-            vec![
-                widget::menu::Item::Button("Terminate", None, ContextMenuAction::Term),
-                widget::menu::Item::Divider,
-                widget::menu::Item::Button("Kill", None, ContextMenuAction::Kill),
-            ],
-        ))
-    }
-}
-
-impl widget::menu::Action for ContextMenuAction {
-    type Message = AppMessage;
-    fn message(&self) -> Self::Message {
-        match self {
-            ContextMenuAction::Kill => AppMessage::ProcessKillActive,
-            ContextMenuAction::Term => AppMessage::ProcessTermActive,
-        }
-    }
-}
-
 fn bytes_to_size(bytes: usize) -> String {
     if bytes < 1024usize.pow(1) {
         format!("{} B", bytes)

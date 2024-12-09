@@ -16,7 +16,6 @@ use std::sync::Arc;
 use std::time::Duration;
 
 pub use dbus_interface::*;
-use lazy_static::lazy_static;
 
 macro_rules! dbus_call {
     ($self: ident, $method: tt, $dbus_method_name: literal $(,$args:ident)*) => {{
@@ -85,7 +84,7 @@ impl Debug for SystemInfo {
 }
 
 impl PartialEq for SystemInfo {
-    fn eq(&self, other: &Self) -> bool {
+    fn eq(&self, _: &Self) -> bool {
         true
     }
 }
@@ -211,6 +210,7 @@ impl SystemInfo {
     }
 }
 
+#[allow(dead_code)]
 impl SystemInfo {
     pub fn set_refresh_interval(&self, interval: u64) {
         if let Err(e) = self

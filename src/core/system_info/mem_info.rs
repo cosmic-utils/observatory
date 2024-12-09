@@ -89,10 +89,13 @@ pub struct MemInfo {
     pub direct_map1g: usize,
 }
 
+#[allow(dead_code)]
 impl MemInfo {
     pub fn load() -> Option<Self> {
-
-        let meminfo = if let Ok(output) = std::process::Command::new("cat").arg("/proc/meminfo").output() {
+        let meminfo = if let Ok(output) = std::process::Command::new("cat")
+            .arg("/proc/meminfo")
+            .output()
+        {
             if output.stderr.len() > 0 {
                 log::error!(
                     "Failed to refresh memory information, host command execution failed: {}",
@@ -103,9 +106,7 @@ impl MemInfo {
 
             String::from_utf8_lossy(output.stdout.as_slice()).into_owned()
         } else {
-            log::error!(
-                "Failed to refresh memory information, host command execution failed"
-            );
+            log::error!("Failed to refresh memory information, host command execution failed");
 
             return None;
         };
@@ -189,8 +190,7 @@ impl MemInfo {
     pub fn load_memory_device_info() -> Option<Vec<MemoryDevice>> {
         use std::process::*;
 
-        let is_flatpak = false; //*super::IS_FLATPAK;
-        let mut cmd = {//if !is_flatpak {
+        let mut cmd = {
             let mut cmd = Command::new("udevadm");
             cmd.arg("info")
                 .arg("-q")
@@ -199,11 +199,6 @@ impl MemInfo {
                 .arg("/sys/devices/virtual/dmi/id");
             cmd.env_remove("LD_PRELOAD");
             cmd
-        //} else {
-        //    let mut cmd =
-        //        cmd_flatpak_host!("udevadm info -q property -p /sys/devices/virtual/dmi/id");
-        //    cmd.env_remove("LD_PRELOAD");
-        //    cmd
         };
 
         let cmd_output = match cmd.output() {

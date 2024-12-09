@@ -20,6 +20,7 @@
 
 use super::{Process, ProcessUsageStats};
 
+#[allow(dead_code)]
 pub fn process_hierarchy(processes: &std::collections::HashMap<u32, Process>) -> Option<Process> {
     use std::collections::*;
 

@@ -41,7 +41,7 @@ pub struct App {
     modifiers: Modifiers,
     key_binds: HashMap<KeyBind, Action>,
     context_page: ContextPage,
-    sys_info: Arc<RwLock<SystemInfo>>,
+    _sys_info: Arc<RwLock<SystemInfo>>,
 }
 
 /// Implement [`cosmic::Application`] to integrate with COSMIC.
@@ -125,7 +125,7 @@ impl cosmic::Application for App {
             modifiers: Modifiers::empty(),
             key_binds: key_binds(),
             context_page: ContextPage::Settings,
-            sys_info,
+            _sys_info: sys_info,
         };
 
         let command = Task::batch([

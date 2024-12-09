@@ -3716,7 +3716,6 @@ dependencies = [
  "env_logger",
  "i18n-embed",
  "i18n-embed-fl",
- "lazy_static",
  "libc",
  "libcosmic",
  "log",

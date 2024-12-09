@@ -1,6 +1,6 @@
 mod cpu;
+mod disk;
 mod mem;
-//mod disk;
 
 use crate::app::message::AppMessage;
 use crate::core::icons;
@@ -28,11 +28,11 @@ impl ResourcePage {
             .text(format!(" {}", fl!("memory")))
             .data(Box::new(mem::MemResources::new()) as Box<dyn Page>)
             .icon(icons::get_icon("memory-symbolic".into(), 18));
-        // tab_model
-        //     .insert()
-        //     .text(format!(" {}", fl!("disk")))
-        //     .data(Box::new(disk::DiskResources::new()) as Box<dyn Page>)
-        //     .icon(icons::get_icon("harddisk-symbolic".into(), 18));
+        tab_model
+            .insert()
+            .text(format!(" {}", fl!("disk")))
+            .data(Box::new(disk::DiskResources::new(system_info.clone())) as Box<dyn Page>)
+            .icon(icons::get_icon("harddisk-symbolic".into(), 18));
         tab_model.activate_position(0);
 
         Self { tab_model }

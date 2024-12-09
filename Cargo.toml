@@ -15,7 +15,6 @@ env_logger = "0.11.5"
 dbus = "0.9.7"
 static_assertions = "1.1.0"
 libc = "0.2.167"
-lazy_static = "1.5.0"
 
 [dependencies.libcosmic]
 git = "https://github.com/pop-os/libcosmic.git"

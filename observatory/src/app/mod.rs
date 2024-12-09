@@ -111,7 +111,7 @@ impl cosmic::Application for App {
                 ),
             ])
             .developers([
-                ("Adam Cosner", ""),
+                ("Adam Cosner", "adam.cosner@proton.me"),
                 ("Eduardo Flores", "edfloreshz@proton.me"),
             ]);
 

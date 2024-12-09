@@ -1,4 +1,5 @@
 name := 'observatory'
+dae-name := 'observatory-daemon'
 appid := 'io.github.cosmic_utils.observatory'
 rootdir := ''
 prefix := '/usr'
@@ -6,8 +7,8 @@ base-dir := absolute_path(clean(rootdir / prefix))
 share-dir := base-dir / 'share'
 bin-src := 'target' / 'release' / name
 bin-dst := base-dir / 'bin' / name
-dae-src := 'src' / 'observatory-daemon' / 'target' / 'release' / 'observatory-daemon'
-dae-dst := base-dir / 'bin' / 'observatory-daemon'
+dae-src := 'target' / 'release' / dae-name
+dae-dst := base-dir / 'bin' / dae-name
 desktop := appid + '.desktop'
 desktop-src := 'res' / desktop
 desktop-dst := share-dir / 'applications' / desktop

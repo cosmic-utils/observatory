@@ -1,34 +1,6 @@
-[package]
-name = "observatory"
-version = "0.2.0"
-edition = "2021"
-license = "GPL-3.0-only"
-repository = "https://github.com/cosmic-utils/observatory.git"
-
-[dependencies]
-i18n-embed-fl = "0.9.2"
-open = "5.3.0"
-rust-embed = "8.5.0"
-serde = { version = "1.0.215", features = ["derive"] }
-log = "0.4.22"
-env_logger = "0.11.5"
-dbus = "0.9.7"
-static_assertions = "1.1.0"
-libc = "0.2.167"
-
-[dependencies.libcosmic]
-git = "https://github.com/pop-os/libcosmic.git"
-default-features = false
-features = [
-    "a11y",
-    "tokio",
-    "winit",
-    "wayland",
-    "wgpu",
-    "xdg-portal",
-    "about",
+[workspace]
+members = [
+    "observatory",
+    "observatory-daemon"
 ]
 
-[dependencies.i18n-embed]
-version = "0.15"
-features = ["fluent-system", "desktop-requester"]

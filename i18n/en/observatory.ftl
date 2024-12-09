@@ -34,6 +34,9 @@ single-core-view = Single core view
 memory = Memory
 swap = Swap
 
+gpu = GPU
+vram = VRAM
+
 disk = Disk
 total-read = Total read
 total-write = Total write

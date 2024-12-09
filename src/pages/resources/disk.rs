@@ -157,55 +157,6 @@ impl DiskResources {
         .height(iced::Length::Fill)
         .padding([cosmic.space_s(), cosmic.space_m()])
         .into()
-        // let mut col = widget::column::with_capacity(10);
-        // col = col.push(
-        //     widget::row::with_children(vec![
-        //         widget::column::with_children(vec![
-        //             widget::text::heading(fl!("total-read")).into(),
-        //             horizontal_rule(1).into(),
-        //             widget::text::body(format!("{}", format_size(self.total_disk_read),)).into(),
-        //         ])
-        //         .spacing(cosmic.space_xxxs())
-        //         .into(),
-        //         widget::column::with_children(vec![
-        //             widget::text::heading(fl!("total-write")).into(),
-        //             horizontal_rule(1).into(),
-        //             widget::text::body(format!("{}", format_size(self.total_disk_write),)).into(),
-        //         ])
-        //         .spacing(cosmic.space_xxxs())
-        //         .into(),
-        //     ])
-        //     .spacing(cosmic.space_xxs()),
-        // );
-        //
-        // col = col.push(
-        //     widget::row::with_children(vec![
-        //         widget::column::with_children(vec![
-        //             widget::text::heading(fl!("read")).into(),
-        //             horizontal_rule(1).into(),
-        //             widget::text::body(format!("{}", format_size(self.disk_read),)).into(),
-        //         ])
-        //         .spacing(cosmic.space_xxxs())
-        //         .into(),
-        //         widget::column::with_children(vec![
-        //             widget::text::heading(fl!("write")).into(),
-        //             horizontal_rule(1).into(),
-        //             widget::text::body(format!("{}", format_size(self.disk_write),)).into(),
-        //         ])
-        //         .spacing(cosmic.space_xxxs())
-        //         .into(),
-        //     ])
-        //     .spacing(cosmic.space_xxs()),
-        // );
-        //
-        // widget::container(
-        //     col.width(Length::Fixed(256.))
-        //         .height(Length::Fill)
-        //         .spacing(cosmic.space_s())
-        //         .padding([cosmic.space_xs(), cosmic.space_xs()]),
-        // )
-        // .class(theme::Container::Primary)
-        // .into()
     }
 }
 

@@ -1,5 +1,6 @@
 mod cpu;
 mod disk;
+mod gpu;
 mod mem;
 
 use crate::app::message::AppMessage;
@@ -28,6 +29,11 @@ impl ResourcePage {
             .text(format!(" {}", fl!("memory")))
             .data(Box::new(mem::MemResources::new()) as Box<dyn Page>)
             .icon(icons::get_icon("memory-symbolic".into(), 18));
+        tab_model
+            .insert()
+            .text(format!(" {}", fl!("gpu")))
+            .data(Box::new(gpu::GpuResources::new(system_info.clone())) as Box<dyn Page>)
+            .icon(icons::get_icon("processor-symbolic".into(), 18));
         tab_model
             .insert()
             .text(format!(" {}", fl!("disk")))

@@ -178,7 +178,7 @@ impl super::Page for OverviewPage {
             .spacing(cosmic.space_xs())
             .push(widget::text::title4(fl!("applications")))
             .push(iced::widget::horizontal_rule(1))
-            .push(apps_list);
+            .push(widget::scrollable(apps_list));
 
         widget::column()
             .spacing(cosmic.space_xxs())

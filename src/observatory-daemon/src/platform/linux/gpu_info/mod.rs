@@ -836,6 +836,11 @@ impl<'a> GpuInfoExt<'a> for LinuxGpuInfo {
 
         let processes = processes.process_list_mut();
 
+        for process in processes.iter_mut() {
+            process.1.usage_stats.gpu_usage = 0.;
+            process.1.usage_stats.gpu_memory_usage = 0.;
+        }
+
         let mut device: *mut nvtop::ListHead = gpu_list.next;
         while device != gpu_list {
             let dev: &nvtop::GPUInfo = unsafe { core::mem::transmute(device) };
@@ -918,8 +923,8 @@ impl<'a> GpuInfoExt<'a> for LinuxGpuInfo {
             for i in 0..dev.processes_count as usize {
                 let process = unsafe { &*dev.processes.add(i) };
                 if let Some(proc) = processes.get_mut(&(process.pid as u32)) {
-                    proc.usage_stats.gpu_usage = process.gpu_usage as f32;
-                    proc.usage_stats.gpu_memory_usage = process.gpu_memory_usage as f32;
+                    proc.usage_stats.gpu_usage += process.gpu_usage as f32;
+                    proc.usage_stats.gpu_memory_usage += process.gpu_memory_usage as f32;
                 }
             }
         }

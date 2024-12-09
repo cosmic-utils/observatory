@@ -44,9 +44,10 @@ View and manage running processes on your system.
 
 ## Installation
 
-To install, clone this repository and run the following command:
+To install, clone this repository and run the following commands:
 
 ```
+sudo just install-daemon
 sudo just install
 ```
 

@@ -5,8 +5,8 @@
   
   <br/><br/>
 
-  ![Screenshot of the observatory app's processes page](res/screenshots/disk-light.png#gh-light-mode-only)
-  ![Screenshot of the observatory app's processes page](res/screenshots/disk-dark.png#gh-dark-mode-only)
+  ![Screenshot of the observatory app's processes page](observatory/res/screenshots/disk-light.png#gh-light-mode-only)
+  ![Screenshot of the observatory app's processes page](observatory/res/screenshots/disk-dark.png#gh-dark-mode-only)
 
 </div>
 
@@ -18,29 +18,29 @@ View information about your system.
 
 View usage per core, threads, processes handles, up time, speed and total usage.
 
-![CPU Light](res/screenshots/processor-light.png#gh-light-mode-only)
-![CPU Dark](res/screenshots/processor-dark.png#gh-dark-mode-only)
+![CPU Light](observatory/res/screenshots/processor-light.png#gh-light-mode-only)
+![CPU Dark](observatory/res/screenshots/processor-dark.png#gh-dark-mode-only)
 
 ## Memory
 
 View total memory and swap usage.
 
-![Memory Light](res/screenshots/memory-light.png#gh-light-mode-only)
-![Memory Dark](res/screenshots/memory-dark.png#gh-dark-mode-only)
+![Memory Light](observatory/res/screenshots/memory-light.png#gh-light-mode-only)
+![Memory Dark](observatory/res/screenshots/memory-dark.png#gh-dark-mode-only)
 
 ## Disk usage
 
 View usage per disk and total read and write.
 
-![Disk Light](res/screenshots/disk-light.png#gh-light-mode-only)
-![Disk Dark](res/screenshots/disk-dark.png#gh-dark-mode-only)
+![Disk Light](observatory/res/screenshots/disk-light.png#gh-light-mode-only)
+![Disk Dark](observatory/res/screenshots/disk-dark.png#gh-dark-mode-only)
 
 ## Processes
 
 View and manage running processes on your system.
 
-![Processes Light](res/screenshots/processes-light.png#gh-light-mode-only)
-![Processes Dark](res/screenshots/processes-dark.png#gh-dark-mode-only)
+![Processes Light](observatory/res/screenshots/processes-light.png#gh-light-mode-only)
+![Processes Dark](observatory/res/screenshots/processes-dark.png#gh-dark-mode-only)
 
 ## Installation
 

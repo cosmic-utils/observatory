@@ -6,9 +6,9 @@ use std::sync::{Mutex, OnceLock};
 
 pub(crate) static ICON_CACHE: OnceLock<Mutex<IconCache>> = OnceLock::new();
 
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct IconCacheKey {
-    name: &'static str,
+    name: String,
     size: u16,
 }
 
@@ -26,7 +26,7 @@ impl IconCache {
                     include_bytes!(concat!("../../res/icons/bundled/", $name, ".svg"));
                 cache.insert(
                     IconCacheKey {
-                        name: $name,
+                        name: String::from($name),
                         size: $size,
                     },
                     icon::from_svg_bytes(data).symbolic(true),
@@ -44,32 +44,38 @@ impl IconCache {
         Self { cache }
     }
 
-    pub fn get(&mut self, name: &'static str, size: u16) -> icon::Icon {
+    pub fn get(&mut self, name: String, size: u16) -> icon::Icon {
         let handle = self
             .cache
-            .entry(IconCacheKey { name, size })
+            .entry(IconCacheKey {
+                name: name.clone(),
+                size,
+            })
             .or_insert_with(|| icon::from_name(name).size(size).handle())
             .clone();
         icon::icon(handle).size(size)
     }
 
-    pub fn get_handle(&mut self, name: &'static str, size: u16) -> icon::Handle {
+    pub fn get_handle(&mut self, name: String, size: u16) -> icon::Handle {
         let handle = self
             .cache
-            .entry(IconCacheKey { name, size })
+            .entry(IconCacheKey {
+                name: name.clone(),
+                size,
+            })
             .or_insert_with(|| icon::from_name(name).size(size).handle())
             .clone();
         handle
     }
 }
 
-pub fn get_icon(name: &'static str, size: u16) -> icon::Icon {
+pub fn get_icon(name: String, size: u16) -> icon::Icon {
     let mut icon_cache = ICON_CACHE.get().unwrap().lock().unwrap();
     icon_cache.get(name, size)
 }
 
 #[allow(dead_code)]
-pub fn get_handle(name: &'static str, size: u16) -> icon::Handle {
+pub fn get_handle(name: String, size: u16) -> icon::Handle {
     let mut icon_cache = ICON_CACHE.get().unwrap().lock().unwrap();
     icon_cache.get_handle(name, size)
 }

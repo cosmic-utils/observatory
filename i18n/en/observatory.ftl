@@ -12,23 +12,35 @@ view = View
 menu-settings = Settings
 menu-about = About
 
+# Overview page
+overview-page = Overview
+resource-overview = Resource Overview
+applications = Applications
+
 # Resources page
+resource-page = Resources
+utilization = Utilization
+speed = Speed
+capacity = Capacity
+
 cpu = CPU
+core = Core
+processes = Processes
+threads = Threads
+handles = Handles
+multi-core-view = Multi core view
+single-core-view = Single core view
+
 memory = Memory
+swap = Swap
+
 disk = Disk
-total-mem = Total memory
-total-swap = Total swap
-mem-utilization = Memory utilization
-swap-utilization = Swap utilizaiton
 total-read = Total read
 total-write = Total write
 read = Read
 write = Write
-utilization = Utilizaiton
-speed-avg = Speed (Core Avg)
-core = Core
-multi-core-view = Multi core view
-single-core-view = Single core view
+
 
 # Processes Page
+process-page = Processes
 proc-info = Process Info

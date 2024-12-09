@@ -1,14 +1,12 @@
-use core::settings;
-
 mod app;
 mod core;
 mod pages;
+mod style;
 mod widgets;
 
+use core::settings;
+
 fn main() -> cosmic::iced::Result {
-    if flatpak_unsandbox::unsandbox(None).is_ok() {
-        return Ok(())
-    }
     settings::init();
     cosmic::app::run::<app::App>(settings::settings(), settings::flags())
 }

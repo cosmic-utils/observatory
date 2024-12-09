@@ -1,20 +1,20 @@
-pub trait Page {
-    fn update(
-        &mut self,
-        sys: &sysinfo::System,
-        message: crate::app::message::AppMessage,
-    ) -> cosmic::Task<cosmic::app::message::Message<crate::app::message::AppMessage>>;
+use crate::app::message::AppMessage;
+use cosmic::app::context_drawer::ContextDrawer;
+use cosmic::app::Task;
+use cosmic::Element;
 
-    fn context_menu(
-        &self,
-    ) -> Option<cosmic::app::context_drawer::ContextDrawer<'_, crate::app::message::AppMessage>>
-    {
+pub trait Page {
+    // Required methods
+    fn update(&mut self, message: AppMessage) -> Task<AppMessage>;
+
+    fn view(&self) -> Element<AppMessage>;
+
+    // Optional methods
+    fn context_menu(&self) -> Option<ContextDrawer<AppMessage>> {
         None
     }
 
-    fn view(&self) -> cosmic::Element<'_, crate::app::message::AppMessage>;
-
-    fn footer(&self) -> Option<cosmic::Element<'_, crate::app::message::AppMessage>> {
+    fn footer(&self) -> Option<Element<AppMessage>> {
         None
     }
 }

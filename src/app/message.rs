@@ -1,18 +1,17 @@
+use crate::app::context::ContextPage;
 use cosmic::iced::keyboard::{Key, Modifiers};
 
-use crate::app::context::ContextPage;
-
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum AppMessage {
-    Refresh,
+    SysInfoRefresh,
     KeyPressed(Key),
 
-    ApplicationSelect(String),
-    ApplicationClose,
+    OverviewApplicationSelect(Option<String>),
+    OverviewApplicationClose,
 
     ProcessTermActive,
     ProcessKillActive,
-    ProcessClick(Option<sysinfo::Pid>),
+    ProcessClick(Option<u32>),
     ProcessCategoryClick(u8),
     MulticoreView(bool),
 

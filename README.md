@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="res/icons/hicolor/scalable/apps/icon.svg" width="300" />
+  <img src="observatory/res/icons/hicolor/scalable/apps/icon.svg" width="300" />
   <h1>Observatory</h1>
   <p>An in-development system monitor application for the COSMIC™ desktop environment</p>
   

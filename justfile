@@ -10,10 +10,10 @@ bin-dst := base-dir / 'bin' / name
 dae-src := 'target' / 'release' / dae-name
 dae-dst := base-dir / 'bin' / dae-name
 desktop := appid + '.desktop'
-desktop-src := 'res' / desktop
+desktop-src := 'observatory' / 'res' / desktop
 desktop-dst := share-dir / 'applications' / desktop
 metainfo-dst := share-dir / 'metainfo' / appid + '.xml'
-icons-src := 'res' / 'icons' / 'hicolor'
+icons-src := 'observatory' / 'res' / 'icons' / 'hicolor'
 icons-dst := share-dir / 'icons' / 'hicolor'
 icon-svg-src := icons-src / 'scalable' / 'apps' / 'icon.svg'
 icon-svg-dst := icons-dst / 'scalable' / 'apps' / appid + '.svg'
@@ -58,9 +58,9 @@ run *args:
 install:
     install -Dm0755 {{ bin-src }} {{ bin-dst }}
     install -Dm0755 {{ dae-src }} {{ dae-dst }}
-    install -Dm0644 res/app.desktop {{ desktop-dst }}
+    install -Dm0644 observatory/res/app.desktop {{ desktop-dst }}
     install -Dm0644 {{ icon-svg-src }} {{ icon-svg-dst }}
-    install -Dm0644 res/metainfo.xml {{ metainfo-dst }}
+    install -Dm0644 observatory/res/metainfo.xml {{ metainfo-dst }}
 
 # Uninstalls installed files
 uninstall:

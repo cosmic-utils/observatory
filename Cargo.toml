@@ -1,6 +1,3 @@
 [workspace]
-members = [
-    "observatory",
-    "observatory-daemon"
-]
-
+resolver = "2"
+members = ["observatory", "observatory-daemon"]

@@ -2,7 +2,7 @@
 name = "observatory"
 authors = [
     "Adam Cosner <adam.cosner@proton.me>",
-    "Eduardo Flores <edfloreshz@proton.me>"
+    "Eduardo Flores <edfloreshz@proton.me>",
 ]
 description = "A system monitor application for the COSMIC desktop environment"
 version = "0.2.1"
@@ -24,15 +24,7 @@ libc = "0.2.167"
 [dependencies.libcosmic]
 git = "https://github.com/pop-os/libcosmic.git"
 default-features = false
-features = [
-    "a11y",
-    "tokio",
-    "winit",
-    "wayland",
-    "wgpu",
-    "xdg-portal",
-    "about",
-]
+features = ["a11y", "tokio", "winit", "wayland", "wgpu", "xdg-portal", "about"]
 
 [dependencies.i18n-embed]
 version = "0.15"
@@ -48,9 +40,38 @@ depends = "$auto"
 section = "utility"
 priority = "optional"
 assets = [
-    ["target/release/observatory", "usr/bin/", "755"],
-    ["target/release/observatory-daemon", "usr/bin/", "755"],
-    ["res/app.desktop", "usr/share/applications/io.github.cosmic_utils.observatory.desktop", "644"],
-    ["res/icons/hicolor/scalable/apps/icon.svg", "usr/share/icons/hicolor/scalable/apps/io.github.cosmic_utils.observatory.desktop", "644"],
-    ["res/metainfo.xml", "usr/share/metainfo/io.github.cosmic_utils.observatory.xml", "644"]
+    [
+        "target/release/observatory",
+        "usr/bin/",
+        "755",
+    ],
+    [
+        "target/release/observatory-daemon",
+        "usr/bin/",
+        "755",
+    ],
+    [
+        "observatory/res/app.desktop",
+        "usr/share/applications/io.github.cosmic_utils.observatory.desktop",
+        "644",
+    ],
+    [
+        "observatory/res/icons/hicolor/scalable/apps/icon.svg",
+        "usr/share/icons/hicolor/scalable/apps/io.github.cosmic_utils.observatory.svg",
+        "644",
+    ],
+    [
+        "observatory/res/metainfo.xml",
+        "usr/share/metainfo/io.github.cosmic_utils.observatory.xml",
+        "644",
+    ],
+]
+
+[package.metainfo.generate-rpm]
+assets = [
+    { source = "./target/release/observatory", dest = "/usr/bin/", mode = "755", config = false, doc = false, user = "root", group = "root" },
+    { source = "./target/release/observatory-daemon", dest = "/usr/bin/", mode = "755", config = false, doc = false, user = "root", group = "root" },
+    { source = "./observatory/res/app.desktop", dest = "/usr/share/applications/io.github.cosmic_utils.observatory.desktop", mode = "644", config = false, doc = false, user = "root", group = "root" },
+    { source = "./observatory/res/icons/hicolor/scalable/apps/icon.svg", dest = "/usr/share/icons/hicolor/scalable/apps/io.github.cosmic_utils.observatory.svg", mode = "644", config = false, doc = false, user = "root", group = "root" },
+    { source = "./observatory/res/metainfo.xml", dest = "/usr/share/metainfo/io.github.cosmic_utils.observatory.xml", mode = "644", config = false, doc = false, user = "root", group = "root" },
 ]

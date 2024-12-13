@@ -1,8 +1,8 @@
 {
   "package-name": "nvtop",
-  "directory": "nvtop-6e91c745cd051d902fc57e9195068df03eb192bb",
-  "source-url": "https://github.com/Syllo/nvtop/archive/6e91c745cd051d902fc57e9195068df03eb192bb.tar.gz",
-  "source-hash": "dd162f984893c63b67c07113dec5fb327b6f643889dadd0ced69db4184523ffa",
+  "directory": "nvtop-19382d93086acf36f32a8d72173fb9968232e3c1",
+  "source-url": "https://github.com/Syllo/nvtop/archive/19382d93086acf36f32a8d72173fb9968232e3c1.tar.gz",
+  "source-hash": "73acacb17f1e142b1e6a2eb79eada5c1735c72ed57bdfe2c4e43c59600558679",
   "patches": [
     "patches/nvtop-amdgpu-h.patch",
     "patches/nvtop-amdgpu_drm-h.patch",

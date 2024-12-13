@@ -51,23 +51,23 @@ assets = [
         "755",
     ],
     [
-        "observatory/res/app.desktop",
+        "res/app.desktop",
         "usr/share/applications/io.github.cosmic_utils.observatory.desktop",
         "644",
     ],
     [
-        "observatory/res/icons/hicolor/scalable/apps/icon.svg",
+        "res/icons/hicolor/scalable/apps/icon.svg",
         "usr/share/icons/hicolor/scalable/apps/io.github.cosmic_utils.observatory.svg",
         "644",
     ],
     [
-        "observatory/res/metainfo.xml",
+        "res/metainfo.xml",
         "usr/share/metainfo/io.github.cosmic_utils.observatory.xml",
         "644",
     ],
 ]
 
-[package.metainfo.generate-rpm]
+[package.metadata.generate-rpm]
 assets = [
     { source = "./target/release/observatory", dest = "/usr/bin/", mode = "755", config = false, doc = false, user = "root", group = "root" },
     { source = "./target/release/observatory-daemon", dest = "/usr/bin/", mode = "755", config = false, doc = false, user = "root", group = "root" },

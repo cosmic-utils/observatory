@@ -158,6 +158,8 @@ fn build_nvtop(src_dir: &std::path::Path) -> Result<(), Box<dyn std::error::Erro
             src_dir.join("src/extract_gpuinfo_amdgpu.c"),
             src_dir.join("src/extract_gpuinfo_amdgpu_utils.c"),
             src_dir.join("src/extract_gpuinfo_intel.c"),
+            src_dir.join("src/extract_gpuinfo_intel_i915.c"),
+            src_dir.join("src/extract_gpuinfo_intel_xe.c"),
             src_dir.join("src/time.c"),
         ]);
     #[cfg(not(debug_assertions))]

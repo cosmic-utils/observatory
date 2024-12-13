@@ -35,7 +35,7 @@ clean-dist: clean clean-vendor
 # Compiles with debug profile
 build-debug *args:
     cargo build {{ args }}
-    cargo build --manifest-path ./src/observatory-daemon/Cargo.toml {{ args }}
+    cargo build --manifest-path ./observatory-daemon/Cargo.toml {{ args }}
 
 # Compiles with release profile
 build-release *args: (build-debug '--release' args)

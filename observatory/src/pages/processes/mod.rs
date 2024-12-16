@@ -171,7 +171,10 @@ impl Page for ProcessPage {
                         })
                         .map(|process| {
                             let apps = sys.apps();
-                            let mut icon = cosmic::desktop::IconSource::default();
+                            let mut icon = cosmic::desktop::IconSource::Name(
+                                "application-x-executable-symbolic".to_string(),
+                            );
+
                             for app in apps.values() {
                                 if let Some(app_icon) = app.icon.clone() {
                                     if let Some(_) =

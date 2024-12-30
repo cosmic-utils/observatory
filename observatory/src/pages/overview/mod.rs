@@ -148,7 +148,7 @@ impl super::Page for OverviewPage {
 
         // APPLICATIONS
         let mut applications = self.applications.values().collect::<Vec<&App>>();
-        let mut apps_list = widget::column().spacing(cosmic.space_xxs());
+        let mut apps_list = widget::list_column();
         applications.sort_by_key(|a| &a.name);
         for app in applications.into_iter().collect::<Vec<&App>>() {
             let is_selected = if let Some(selected_app) = &self.selected_app {
@@ -166,7 +166,7 @@ impl super::Page for OverviewPage {
                 // App name
                 .push(widget::text::body(app.name.clone().to_string()));
 
-            apps_list = apps_list.push(
+            apps_list = apps_list.add(
                 widget::button::custom(app_widget)
                     .on_press(AppMessage::OverviewApplicationSelect(Some(
                         app.id.to_string(),

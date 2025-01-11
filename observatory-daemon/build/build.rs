@@ -162,8 +162,8 @@ fn build_nvtop(src_dir: &std::path::Path) -> Result<(), Box<dyn std::error::Erro
             src_dir.join("src/extract_gpuinfo_intel_xe.c"),
             src_dir.join("src/time.c"),
         ]);
-    #[cfg(not(debug_assertions))]
-    build_def.flag("-flto");
+    //#[cfg(not(debug_assertions))]
+    //build_def.flag("-flto");
     build_def.flag("-Wno-unused-function");
 
     build_def.compile("nvtop");

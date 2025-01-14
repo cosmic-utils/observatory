@@ -7,7 +7,7 @@ authors = [
 description = "A system monitor application for the COSMIC desktop environment"
 version = "0.2.1"
 edition = "2021"
-license = "GPL-3.0-only"
+license = "MPL-2.0"
 repository = "https://github.com/cosmic-utils/observatory.git"
 
 [dependencies]

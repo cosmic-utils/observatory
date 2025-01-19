@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: MPL-2.0
+mod page;
 
 use crate::config::Config;
 use crate::fl;
 use cosmic::app::{context_drawer, Core, Task};
 use cosmic::cosmic_config::{self, CosmicConfigEntry};
-use cosmic::iced::alignment::{Horizontal, Vertical};
-use cosmic::iced::{Alignment, Length, Subscription};
+use cosmic::iced::{stream, Alignment, Subscription};
+use cosmic::prelude::*;
+use cosmic::widget::segmented_button::Entity;
 use cosmic::widget::{self, icon, menu, nav_bar};
-use cosmic::{cosmic_theme, theme, Application, ApplicationExt, Apply, Element};
-use futures_util::SinkExt;
+use cosmic::{cosmic_theme, theme, Application};
+use futures_util::{SinkExt, StreamExt};
+use page::Page;
 use std::collections::HashMap;
 
 const REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
@@ -32,11 +35,16 @@ pub struct AppModel {
 /// Messages emitted by the application and its widgets.
 #[derive(Debug, Clone)]
 pub enum Message {
+    // No operation, returned from tasks that do nothing
+    //NoOp,
     OpenRepositoryUrl,
-    SubscriptionChannel,
     ToggleContextPage(ContextPage),
     UpdateConfig(Config),
     LaunchUrl(String),
+
+    Snapshot(monitord::system::SystemSnapshot),
+    SelectProcess(widget::table::Entity),
+    SortCategory(page::processes::ProcessTableCategory),
 }
 
 /// Create a COSMIC application from the app model
@@ -67,20 +75,10 @@ impl Application for AppModel {
         let mut nav = nav_bar::Model::default();
 
         nav.insert()
-            .text(fl!("page-id", num = 1))
-            .data::<Page>(Page::Page1)
-            .icon(icon::from_name("applications-science-symbolic"))
+            .text(fl!("processes"))
+            .data(Box::new(page::processes::ProcessPage::new()) as Box<dyn page::Page>)
+            .icon(icon::from_name("utilities-terminal-symbolic"))
             .activate();
-
-        nav.insert()
-            .text(fl!("page-id", num = 2))
-            .data::<Page>(Page::Page2)
-            .icon(icon::from_name("applications-system-symbolic"));
-
-        nav.insert()
-            .text(fl!("page-id", num = 3))
-            .data::<Page>(Page::Page3)
-            .icon(icon::from_name("applications-games-symbolic"));
 
         // Construct the app model with the runtime's core.
         let mut app = AppModel {
@@ -133,13 +131,22 @@ impl Application for AppModel {
             return None;
         }
 
-        Some(match self.context_page {
-            ContextPage::About => context_drawer::context_drawer(
-                self.about(),
-                Message::ToggleContextPage(ContextPage::About),
-            )
-            .title(fl!("about")),
-        })
+        match self.context_page {
+            ContextPage::About => Some(
+                context_drawer::context_drawer(
+                    self.about(),
+                    Message::ToggleContextPage(ContextPage::About),
+                )
+                .title(fl!("about")),
+            ),
+            ContextPage::PageAbout => {
+                if let Some(page) = self.nav.active_data::<Box<dyn Page>>() {
+                    page.context_drawer()
+                } else {
+                    None
+                }
+            }
+        }
     }
 
     /// Describes the interface based on the current state of the application model.
@@ -147,13 +154,27 @@ impl Application for AppModel {
     /// Application events will be processed through the view. Any messages emitted by
     /// events received by widgets will be passed to the update method.
     fn view(&self) -> Element<Self::Message> {
-        widget::text::title1(fl!("welcome"))
-            .apply(widget::container)
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .align_x(Horizontal::Center)
-            .align_y(Vertical::Center)
-            .into()
+        if let Some(page) = self.nav.active_data::<Box<dyn Page>>() {
+            page.view()
+        } else {
+            widget::horizontal_space().apply(Element::from)
+        }
+    }
+
+    fn dialog(&self) -> Option<Element<Self::Message>> {
+        if let Some(page) = self.nav.active_data::<Box<dyn Page>>() {
+            page.dialog()
+        } else {
+            None
+        }
+    }
+
+    fn footer(&self) -> Option<Element<Self::Message>> {
+        if let Some(page) = self.nav.active_data::<Box<dyn Page>>() {
+            page.footer()
+        } else {
+            None
+        }
     }
 
     /// Register subscriptions for this application.
@@ -162,18 +183,32 @@ impl Application for AppModel {
     /// emit messages to the application through a channel. They are started at the
     /// beginning of the application, and persist through its lifetime.
     fn subscription(&self) -> Subscription<Self::Message> {
-        struct MySubscription;
-
         Subscription::batch(vec![
-            // Create a subscription which emits updates through a channel.
-            Subscription::run_with_id(
-                std::any::TypeId::of::<MySubscription>(),
-                cosmic::iced::stream::channel(4, move |mut channel| async move {
-                    _ = channel.send(Message::SubscriptionChannel).await;
+            Subscription::run(|| {
+                stream::channel(10, move |mut sender| async move {
+                    let conn = zbus::Connection::session()
+                        .await
+                        .expect("Could not initialize a dbus connection!");
+                    let system_proxy = monitord::system::SystemSnapshotProxy::new(&conn)
+                        .await
+                        .expect("Unable to initialize SystemSnapshot dbus proxy");
+                    loop {
+                        let signal = system_proxy
+                            .receive_snapshot()
+                            .await
+                            .unwrap()
+                            .next()
+                            .await
+                            .unwrap();
 
-                    futures_util::future::pending().await
-                }),
-            ),
+                        let args = signal.args().unwrap();
+                        sender
+                            .send(Message::Snapshot(args.instance().clone()))
+                            .await
+                            .expect("Could not send the snapshot!");
+                    }
+                })
+            }),
             // Watch for application configuration changes.
             self.core()
                 .watch_config::<Config>(Self::APP_ID)
@@ -192,13 +227,10 @@ impl Application for AppModel {
     /// Tasks may be returned for asynchronous execution of code in the background
     /// on the application's async runtime.
     fn update(&mut self, message: Self::Message) -> Task<Self::Message> {
-        match message {
+        let mut tasks = Vec::new();
+        match message.clone() {
             Message::OpenRepositoryUrl => {
                 _ = open::that_detached(REPOSITORY);
-            }
-
-            Message::SubscriptionChannel => {
-                // For example purposes only.
             }
 
             Message::ToggleContextPage(context_page) => {
@@ -219,11 +251,19 @@ impl Application for AppModel {
             Message::LaunchUrl(url) => match open::that_detached(&url) {
                 Ok(()) => {}
                 Err(err) => {
-                    eprintln!("failed to open {url:?}: {err}");
+                    tracing::error!("failed to open {url:?}: {err}");
                 }
             },
+
+            _ => {}
         }
-        Task::none()
+
+        for entity in self.nav.iter().collect::<Vec<Entity>>() {
+            if let Some(page) = self.nav.data_mut::<Box<dyn page::Page>>(entity) {
+                tasks.push(page.update(message.clone()));
+            }
+        }
+        Task::batch(tasks)
     }
 
     /// Called when a nav item is selected.
@@ -287,18 +327,12 @@ impl AppModel {
     }
 }
 
-/// The page to display in the application.
-pub enum Page {
-    Page1,
-    Page2,
-    Page3,
-}
-
 /// The context page to display in the context drawer.
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq)]
 pub enum ContextPage {
     #[default]
     About,
+    PageAbout,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

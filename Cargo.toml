@@ -15,6 +15,9 @@ i18n-embed-fl = "0.9.2"
 open = "5.3.0"
 rust-embed = "8.5.0"
 tokio = { version = "1.41.0", features = ["full"] }
+tracing = "0.1.41"
+tracing-subscriber = "0.3.19"
+zbus = "5.3.0"
 
 [dependencies.monitord]
 path = "./monitord"
@@ -24,7 +27,7 @@ version = "0.15"
 features = ["fluent-system", "desktop-requester"]
 
 [dependencies.libcosmic]
-git = "https://github.com/pop-os/libcosmic.git"
+git = "https://github.com/Adam-Cosner/libcosmic.git"
 # See https://github.com/pop-os/libcosmic/blob/master/Cargo.toml for available features.
 features = [
     # Accessibility support
@@ -47,6 +50,6 @@ features = [
 
 # Uncomment to test a locally-cloned libcosmic
 # [patch.'https://github.com/pop-os/libcosmic']
-# libcosmic = { path = "../libcosmic" }
-# cosmic-config = { path = "../libcosmic/cosmic-config" }
-# cosmic-theme = { path = "../libcosmic/cosmic-theme" }
+#libcosmic = { path = "../libcosmic" }
+#cosmic-config = { path = "../libcosmic/cosmic-config" }
+#cosmic-theme = { path = "../libcosmic/cosmic-theme" }

@@ -28,6 +28,7 @@ impl CpuStatic {
 #[derive(zbus::zvariant::Type, serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub struct CpuDynamic {
     pub speed: u64,
+    pub usage: f32,
 }
 
 impl CpuDynamic {
@@ -39,6 +40,7 @@ impl CpuDynamic {
                 .max_by(|x, y| x.frequency().cmp(&y.frequency()))
                 .unwrap()
                 .frequency(),
+            usage: system.global_cpu_usage(),
         }
     }
 }

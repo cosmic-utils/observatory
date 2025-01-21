@@ -76,6 +76,15 @@ impl super::super::Page for CpuPage {
                                 .map(|cpudyn| format!("{:.2} GHz", cpudyn.speed as f32 / 1000.0))
                                 .unwrap_or("Not Loaded".to_string()),
                         ),
+                    ))
+                    .add(widget::settings::item(
+                        "Usage",
+                        widget::text::body(
+                            self.cpu_dyn
+                                .as_ref()
+                                .map(|cpudyn| format!("{}%", cpudyn.usage.round()))
+                                .unwrap_or("Not Loaded".to_string()),
+                        ),
                     )),
             )
             .apply(Element::from)

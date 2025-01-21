@@ -16,6 +16,8 @@ pub struct Process {
 
     /// CPU Usage (per-core)
     pub cpu: f32,
+    /// GPU Usage (per-gpu)
+    pub gpu: Vec<f32>,
     /// Memory usage (in bytes)
     pub memory: u64,
     /// Total disk usage (read and write)
@@ -39,6 +41,7 @@ impl Process {
                         .collect::<Vec<String>>(),
                     exe: proc.exe().unwrap_or(Path::new("")).to_string_lossy().into(),
                     cpu: proc.cpu_usage(),
+                    gpu: vec![0.0],
                     memory: proc.memory(),
                     disk: proc.disk_usage().read_bytes + proc.disk_usage().written_bytes,
                 };

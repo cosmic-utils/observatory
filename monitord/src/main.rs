@@ -5,7 +5,7 @@ use system::SystemServerSignals;
 async fn main() -> zbus::Result<()> {
     tracing_subscriber::fmt().init();
 
-    let mut system_server = system::SystemServer::new();
+    let system_server = system::SystemServer::new();
     let mut system = sysinfo::System::new_all();
     let connection = zbus::connection::Builder::session()?
         .name("io.github.CosmicUtils.Observatory")?

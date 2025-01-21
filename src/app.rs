@@ -13,9 +13,9 @@ use cosmic::{cosmic_theme, theme, Application};
 use futures_util::{SinkExt, StreamExt};
 use page::Page;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 const REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
-const APP_ICON: &[u8] = include_bytes!("../resources/icons/hicolor/scalable/apps/icon.svg");
 
 /// The application model stores app-specific state used to describe its interface and
 /// drive its logic.
@@ -42,9 +42,10 @@ pub enum Message {
     UpdateConfig(Config),
     LaunchUrl(String),
 
-    Snapshot(monitord::system::SystemSnapshot),
-    SelectProcess(widget::table::Entity),
-    SortCategory(page::processes::ProcessTableCategory),
+    SetScaleByCore(bool),
+
+    Snapshot(Arc<monitord::system::SystemSnapshot>),
+    ProcessPageMessage(page::processes::ProcessMessage),
 }
 
 /// Create a COSMIC application from the app model
@@ -71,35 +72,44 @@ impl Application for AppModel {
 
     /// Initializes the application with any given flags and startup commands.
     fn init(core: Core, _flags: Self::Flags) -> (Self, Task<Self::Message>) {
-        // Create a nav bar with three page items.
-        let mut nav = nav_bar::Model::default();
-
-        nav.insert()
-            .text(fl!("processes"))
-            .data(Box::new(page::processes::ProcessPage::new()) as Box<dyn page::Page>)
-            .icon(icon::from_name("utilities-terminal-symbolic"))
-            .activate();
-
         // Construct the app model with the runtime's core.
         let mut app = AppModel {
             core,
             context_page: ContextPage::default(),
-            nav,
+            nav: nav_bar::Model::default(),
             key_binds: HashMap::new(),
             // Optional configuration file for an application.
             config: cosmic_config::Config::new(Self::APP_ID, Config::VERSION)
                 .map(|context| match Config::get_entry(&context) {
                     Ok(config) => config,
-                    Err((_errors, config)) => {
-                        // for why in errors {
-                        //     tracing::error!(%why, "error loading app config");
-                        // }
+                    Err((errors, config)) => {
+                        for why in errors {
+                            tracing::error!(%why, "error loading app config");
+                        }
 
                         config
                     }
                 })
                 .unwrap_or_default(),
         };
+        app.nav
+            .insert()
+            .text(fl!("resources"))
+            .data(
+                Box::new(page::resources::ResourcePage::new(app.config.clone()))
+                    as Box<dyn page::Page>,
+            )
+            .icon(icon::from_name("utilities-system-monitor-symbolic"));
+
+        app.nav
+            .insert()
+            .text(fl!("processes"))
+            .data(
+                Box::new(page::processes::ProcessPage::new(app.config.clone()))
+                    as Box<dyn page::Page>,
+            )
+            .icon(icon::from_name("utilities-terminal-symbolic"))
+            .activate();
 
         // Create a startup command that sets the window title.
         let command = app.update_title();
@@ -113,7 +123,11 @@ impl Application for AppModel {
             menu::root(fl!("view")),
             menu::items(
                 &self.key_binds,
-                vec![menu::Item::Button(fl!("about"), None, MenuAction::About)],
+                vec![
+                    menu::Item::Button(fl!("settings"), None, MenuAction::Settings),
+                    menu::Item::Divider,
+                    menu::Item::Button(fl!("about"), None, MenuAction::About),
+                ],
             ),
         )]);
 
@@ -139,6 +153,10 @@ impl Application for AppModel {
                 )
                 .title(fl!("about")),
             ),
+            ContextPage::Settings => Some(context_drawer::context_drawer(
+                self.settings(),
+                Message::ToggleContextPage(ContextPage::Settings),
+            )),
             ContextPage::PageAbout => {
                 if let Some(page) = self.nav.active_data::<Box<dyn Page>>() {
                     page.context_drawer()
@@ -203,7 +221,7 @@ impl Application for AppModel {
 
                         let args = signal.args().unwrap();
                         sender
-                            .send(Message::Snapshot(args.instance().clone()))
+                            .send(Message::Snapshot(Arc::new(args.instance)))
                             .await
                             .expect("Could not send the snapshot!");
                     }
@@ -213,9 +231,9 @@ impl Application for AppModel {
             self.core()
                 .watch_config::<Config>(Self::APP_ID)
                 .map(|update| {
-                    // for why in update.errors {
-                    //     tracing::error!(?why, "app config error");
-                    // }
+                    for why in update.errors {
+                        tracing::error!(?why, "app config error");
+                    }
 
                     Message::UpdateConfig(update.config)
                 }),
@@ -255,6 +273,15 @@ impl Application for AppModel {
                 }
             },
 
+            Message::SetScaleByCore(state) => {
+                self.config
+                    .set_scale_by_core(
+                        &cosmic_config::Config::new(Self::APP_ID, Config::VERSION).unwrap(),
+                        state,
+                    )
+                    .unwrap();
+            }
+
             _ => {}
         }
 
@@ -280,7 +307,7 @@ impl AppModel {
     pub fn about(&self) -> Element<Message> {
         let cosmic_theme::Spacing { space_xxs, .. } = theme::active().cosmic().spacing;
 
-        let icon = widget::svg(widget::svg::Handle::from_memory(APP_ICON));
+        let icon = widget::icon::from_name("utilities-system-monitor");
 
         let title = widget::text::title3(fl!("app-title"));
 
@@ -310,6 +337,20 @@ impl AppModel {
             .into()
     }
 
+    pub fn settings(&self) -> Element<Message> {
+        let cosmic_theme::Spacing { space_xxs, .. } = theme::active().cosmic().spacing;
+
+        widget::column()
+            .spacing(space_xxs)
+            .push(widget::settings::section().title("Process Settings").add(
+                widget::settings::item(
+                    "Scale Usage By Core",
+                    widget::toggler(self.config.scale_by_core).on_toggle(Message::SetScaleByCore),
+                ),
+            ))
+            .apply(Element::from)
+    }
+
     /// Updates the header and window titles.
     pub fn update_title(&mut self) -> Task<Message> {
         let mut window_title = fl!("app-title");
@@ -332,11 +373,13 @@ impl AppModel {
 pub enum ContextPage {
     #[default]
     About,
+    Settings,
     PageAbout,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum MenuAction {
+    Settings,
     About,
 }
 
@@ -345,6 +388,7 @@ impl menu::action::MenuAction for MenuAction {
 
     fn message(&self) -> Self::Message {
         match self {
+            MenuAction::Settings => Message::ToggleContextPage(ContextPage::Settings),
             MenuAction::About => Message::ToggleContextPage(ContextPage::About),
         }
     }

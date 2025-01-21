@@ -1,4 +1,5 @@
 name := 'observatory'
+named := 'monitord'
 appid := 'io.github.CosmicUtils.Observatory'
 
 rootdir := ''
@@ -7,7 +8,9 @@ prefix := '/usr'
 base-dir := absolute_path(clean(rootdir / prefix))
 
 bin-src := 'target' / 'release' / name
+bind-src := named / 'target' / 'release' / named
 bin-dst := base-dir / 'bin' / name
+bind-dst := base-dir / 'bin' / named
 
 desktop := appid + '.desktop'
 desktop-src := 'resources' / desktop
@@ -61,14 +64,14 @@ run *args:
 
 # Installs files
 install:
-    install -Dm0755
-    install -Dm0644 resources/app.desktop
-    install -Dm0644 resources/app.metainfo.xml
-    install -Dm0644
+    install -Dm0755 {{bin-src}} {{bin-dst}}
+    install -Dm0755 {{bind-src}} {{bind-dst}}
+    install -Dm0644 resources/app.desktop {{desktop-dst}}
+    install -Dm0644 resources/app.metainfo.xml {{appdata-dst}}
 
 # Uninstalls installed files
 uninstall:
-    rm
+    rm {{bin-dst}} {{bind-dst}} {{desktop-dst}} {{appdata-dst}}
 
 # Vendor dependencies locally
 vendor:

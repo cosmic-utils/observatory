@@ -1,4 +1,5 @@
 pub mod processes;
+pub mod resources;
 
 use super::Message;
 use cosmic::app::Task;

@@ -1,16 +1,28 @@
-use crate::fl;
+use std::borrow::Cow;
+
 use cosmic::{
     app::{context_drawer, Task},
     iced::Length,
     prelude::*,
     widget,
 };
+use lazy_static::lazy_static;
 use monitord::system::Process;
 
 use crate::{
     app::{ContextPage, Message},
     config::Config,
+    fl,
 };
+
+lazy_static! {
+    static ref PROC_NAME: String = fl!("name");
+    static ref PROC_CPU: String = fl!("cpu");
+    static ref PROC_GPU0: String = fl!("gpu", num = 0);
+    static ref PROC_GPU1: String = fl!("gpu", num = 1);
+    static ref PROC_MEM: String = fl!("mem");
+    static ref PROC_DISK: String = fl!("disk");
+}
 
 #[derive(Clone, Debug)]
 pub enum ProcessMessage {
@@ -59,17 +71,15 @@ impl super::Page for ProcessPage {
                     }
                     process
                 }) {
-                    self.process_model
-                        .insert(ProcessTableItem {
-                            process: process.clone(),
-                        })
-                        .apply(|entity| {
-                            if let Some(pid) = active_process {
-                                if process.pid == pid {
-                                    entity.activate();
-                                }
+                    let pid = process.pid;
+                    let item = ProcessTableItem::new(process);
+                    self.process_model.insert(item).apply(|entity| {
+                        if let Some(active_pid) = active_process {
+                            if pid == active_pid {
+                                entity.activate();
                             }
-                        });
+                        }
+                    });
                 }
                 if let Some(sort) = old_sort {
                     self.process_model.sort(sort.0, sort.1);
@@ -169,6 +179,28 @@ impl super::Page for ProcessPage {
 
 struct ProcessTableItem {
     process: Process,
+    name: Cow<'static, str>,
+    cpu: Cow<'static, str>,
+    gpu: Vec<Cow<'static, str>>,
+    mem: Cow<'static, str>,
+    disk: Cow<'static, str>,
+}
+
+impl ProcessTableItem {
+    fn new(process: Process) -> Self {
+        Self {
+            name: process.displayname.clone().into(),
+            cpu: format!("{}%", process.cpu.round()).into(),
+            gpu: process
+                .gpu
+                .iter()
+                .map(|usage| format!("{}%", usage.round()).into())
+                .collect::<Vec<Cow<str>>>(),
+            mem: get_bytes(process.memory).into(),
+            disk: format!("{}/s", get_bytes(process.disk)).into(),
+            process,
+        }
+    }
 }
 
 impl widget::table::ItemInterface<ProcessTableCategory> for ProcessTableItem {
@@ -181,15 +213,13 @@ impl widget::table::ItemInterface<ProcessTableCategory> for ProcessTableItem {
         }
     }
 
-    fn get_text(&self, category: ProcessTableCategory) -> std::borrow::Cow<'static, str> {
+    fn get_text(&self, category: ProcessTableCategory) -> Cow<'static, str> {
         match category {
-            ProcessTableCategory::Name => self.process.displayname.clone().into(),
-            ProcessTableCategory::Cpu => format!("{}%", self.process.cpu.round()).into(),
-            ProcessTableCategory::Gpu(num) => {
-                format!("{}%", self.process.gpu[num as usize].round()).into()
-            }
-            ProcessTableCategory::Mem => get_bytes(self.process.memory).into(),
-            ProcessTableCategory::Disk => format!("{}/s", get_bytes(self.process.disk)).into(),
+            ProcessTableCategory::Name => self.name.clone(),
+            ProcessTableCategory::Cpu => self.cpu.clone(),
+            ProcessTableCategory::Gpu(num) => self.gpu.get(num as usize).unwrap().clone(),
+            ProcessTableCategory::Mem => self.mem.clone(),
+            ProcessTableCategory::Disk => self.disk.clone(),
         }
     }
 
@@ -226,11 +256,15 @@ impl std::fmt::Display for ProcessTableCategory {
             f,
             "{}",
             match self {
-                Self::Name => fl!("name"),
-                Self::Cpu => fl!("cpu"),
-                Self::Gpu(num) => fl!("gpu", num = num),
-                Self::Mem => fl!("mem"),
-                Self::Disk => fl!("disk"),
+                Self::Name => PROC_NAME.as_str(),
+                Self::Cpu => PROC_CPU.as_str(),
+                Self::Gpu(num) => match num {
+                    0 => PROC_GPU0.as_str(),
+                    1 => PROC_GPU1.as_str(),
+                    _ => unreachable!(),
+                },
+                Self::Mem => PROC_MEM.as_str(),
+                Self::Disk => PROC_DISK.as_str(),
             }
         )
     }

@@ -210,18 +210,12 @@ impl Application for AppModel {
                     let system_proxy = monitord::system::SystemSnapshotProxy::new(&conn)
                         .await
                         .expect("Unable to initialize SystemSnapshot dbus proxy");
+                    let mut snapshot_stream = system_proxy.receive_snapshot().await.unwrap();
                     loop {
-                        let signal = system_proxy
-                            .receive_snapshot()
-                            .await
-                            .unwrap()
-                            .next()
-                            .await
-                            .unwrap();
+                        let signal = snapshot_stream.next().await.unwrap();
 
-                        let args = signal.args().unwrap();
                         sender
-                            .send(Message::Snapshot(Arc::new(args.instance)))
+                            .send(Message::Snapshot(Arc::new(signal.args().unwrap().instance)))
                             .await
                             .expect("Could not send the snapshot!");
                     }

@@ -3535,6 +3535,7 @@ dependencies = [
  "futures-util",
  "i18n-embed",
  "i18n-embed-fl",
+ "lazy_static",
  "libcosmic",
  "monitord",
  "open",

@@ -20,6 +20,10 @@ pub struct SystemSnapshot {
 pub trait SystemSnapshot {
     #[zbus(signal)]
     fn snapshot(&self, instance: SystemSnapshot) -> zbus::Result<()>;
+
+    fn kill_process(&self, pid: u32) -> zbus::Result<bool>;
+
+    fn term_process(&self, pid: u32) -> zbus::Result<bool>;
 }
 
 impl SystemSnapshot {
@@ -37,12 +41,16 @@ impl SystemSnapshot {
 
 // === SYSTEM SERVER FOR DBUS ===
 #[allow(unused)]
-pub(crate) struct SystemServer {}
+pub(crate) struct SystemServer {
+    system: sysinfo::System,
+}
 
 #[allow(unused)]
 impl SystemServer {
     pub(crate) fn new() -> Self {
-        Self {}
+        Self {
+            system: sysinfo::System::new_all(),
+        }
     }
 }
 
@@ -54,4 +62,23 @@ impl SystemServer {
         signal_emitter: &zbus::object_server::SignalEmitter<'_>,
         instance: SystemSnapshot,
     ) -> zbus::Result<()>;
+
+    pub(crate) async fn kill_process(&self, pid: u32) -> zbus::fdo::Result<bool> {
+        zbus::fdo::Result::Ok(
+            self.system
+                .process(sysinfo::Pid::from_u32(pid))
+                .ok_or(zbus::Error::InvalidField)?
+                .kill(),
+        )
+    }
+
+    pub(crate) async fn term_process(&self, pid: u32) -> zbus::fdo::Result<bool> {
+        zbus::fdo::Result::Ok(
+            self.system
+                .process(sysinfo::Pid::from_u32(pid))
+                .ok_or(zbus::Error::InvalidField)?
+                .kill_with(sysinfo::Signal::Term)
+                .ok_or(zbus::Error::InvalidField)?,
+        )
+    }
 }

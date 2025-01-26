@@ -30,21 +30,24 @@ pub struct AppModel {
     key_binds: HashMap<menu::KeyBind, MenuAction>,
     // Configuration data that persists between application runs.
     config: Config,
+
+    interface: Option<monitord::Interface<'static>>,
 }
 
 /// Messages emitted by the application and its widgets.
 #[derive(Debug, Clone)]
 pub enum Message {
-    // No operation, returned from tasks that do nothing
-    //NoOp,
+    NoOp,
+    InterfaceLoaded(monitord::Interface<'static>),
     OpenRepositoryUrl,
     ToggleContextPage(ContextPage),
     UpdateConfig(Config),
     LaunchUrl(String),
-
+    // Settings
     SetScaleByCore(bool),
 
     Snapshot(Arc<monitord::system::SystemSnapshot>),
+
     ProcessPageMessage(page::processes::ProcessMessage),
 }
 
@@ -91,6 +94,7 @@ impl Application for AppModel {
                     }
                 })
                 .unwrap_or_default(),
+            interface: None,
         };
         app.nav
             .insert()
@@ -204,13 +208,14 @@ impl Application for AppModel {
         Subscription::batch(vec![
             Subscription::run(|| {
                 stream::channel(10, move |mut sender| async move {
-                    let conn = zbus::Connection::session()
+                    let interface = monitord::Interface::init()
                         .await
-                        .expect("Could not initialize a dbus connection!");
-                    let system_proxy = monitord::system::SystemSnapshotProxy::new(&conn)
+                        .expect("Could not initialize interface!");
+                    let mut snapshot_stream = interface.get_signal_iter().await.unwrap();
+                    sender
+                        .send(Message::InterfaceLoaded(interface))
                         .await
-                        .expect("Unable to initialize SystemSnapshot dbus proxy");
-                    let mut snapshot_stream = system_proxy.receive_snapshot().await.unwrap();
+                        .expect("Could not send the monitor interface");
                     loop {
                         let signal = snapshot_stream.next().await.unwrap();
 
@@ -266,6 +271,8 @@ impl Application for AppModel {
                     tracing::error!("failed to open {url:?}: {err}");
                 }
             },
+
+            Message::InterfaceLoaded(interface) => self.interface = Some(interface),
 
             Message::SetScaleByCore(state) => {
                 self.config

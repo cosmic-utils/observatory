@@ -156,33 +156,30 @@ impl super::Page for ProcessPage {
                 .padding([cosmic.space_xxxs(), cosmic.space_xxs()])
                 .push(
                     fl!("details")
-                        .to_string()
                         .apply(widget::button::text)
                         .on_press(Message::ToggleContextPage(ContextPage::PageAbout)),
                 )
                 .push(
-                    fl!("kill")
-                        .to_string()
-                        .apply(widget::button::destructive)
-                        .on_press(Message::ProcessPageMessage(ProcessMessage::KillProcess(
+                    fl!("kill").apply(widget::button::destructive).on_press(
+                        Message::ProcessPageMessage(ProcessMessage::KillProcess(
                             self.process_model
                                 .item(self.process_model.active())
                                 .unwrap()
                                 .process
                                 .pid,
-                        ))),
+                        )),
+                    ),
                 )
                 .push(
-                    fl!("term")
-                        .to_string()
-                        .apply(widget::button::suggested)
-                        .on_press(Message::ProcessPageMessage(ProcessMessage::TermProcess(
+                    fl!("term").apply(widget::button::suggested).on_press(
+                        Message::ProcessPageMessage(ProcessMessage::TermProcess(
                             self.process_model
                                 .item(self.process_model.active())
                                 .unwrap()
                                 .process
                                 .pid,
-                        ))),
+                        )),
+                    ),
                 )
                 .apply(widget::layer_container)
                 .layer(cosmic::cosmic_theme::Layer::Primary)

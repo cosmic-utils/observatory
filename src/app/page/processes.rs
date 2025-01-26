@@ -1,4 +1,5 @@
-use std::borrow::Cow;
+mod process;
+use process::{ProcessTableCategory, ProcessTableItem};
 
 use cosmic::{
     app::{context_drawer, Task},
@@ -6,28 +7,18 @@ use cosmic::{
     prelude::*,
     widget,
 };
-use lazy_static::lazy_static;
-use monitord::system::Process;
 
 use crate::{
     app::{ContextPage, Message},
     config::Config,
     fl,
 };
-
-lazy_static! {
-    static ref PROC_NAME: String = fl!("name");
-    static ref PROC_CPU: String = fl!("cpu");
-    static ref PROC_GPU0: String = fl!("gpu", num = 0);
-    static ref PROC_GPU1: String = fl!("gpu", num = 1);
-    static ref PROC_MEM: String = fl!("mem");
-    static ref PROC_DISK: String = fl!("disk");
-}
-
 #[derive(Clone, Debug)]
 pub enum ProcessMessage {
     SelectProcess(widget::table::Entity),
     SortCategory(ProcessTableCategory),
+    KillProcess(u32),
+    TermProcess(u32),
 }
 
 pub struct ProcessPage {
@@ -35,6 +26,8 @@ pub struct ProcessPage {
     show_info: bool,
     // Configuration data that persists between application runs.
     config: Config,
+    // Interface
+    interface: Option<monitord::Interface<'static>>,
 }
 
 impl ProcessPage {
@@ -49,15 +42,17 @@ impl ProcessPage {
             ]),
             show_info: false,
             config,
+            interface: None,
         }
     }
 }
 
 impl super::Page for ProcessPage {
     fn update(&mut self, msg: Message) -> Task<Message> {
-        let tasks = Vec::new();
+        let mut tasks = Vec::new();
         match msg {
             Message::UpdateConfig(config) => self.config = config,
+            Message::InterfaceLoaded(interface) => self.interface = Some(interface),
             Message::Snapshot(snapshot) => {
                 let old_sort = self.process_model.get_sort();
                 let active_process = self
@@ -100,6 +95,26 @@ impl super::Page for ProcessPage {
                         self.process_model.sort(category, false)
                     }
                 }
+                ProcessMessage::KillProcess(pid) => match self.interface.clone() {
+                    Some(interface) => tasks.push(Task::future(async move {
+                        interface
+                            .kill_process(pid)
+                            .await
+                            .expect("Failed to term process!");
+                        cosmic::app::message::app(Message::NoOp)
+                    })),
+                    None => {}
+                },
+                ProcessMessage::TermProcess(pid) => match self.interface.clone() {
+                    Some(interface) => tasks.push(Task::future(async move {
+                        interface
+                            .term_process(pid)
+                            .await
+                            .expect("Failed to term process!");
+                        cosmic::app::message::app(Message::NoOp)
+                    })),
+                    None => {}
+                },
             },
             Message::ToggleContextPage(page) => {
                 if let ContextPage::PageAbout = page {
@@ -122,7 +137,7 @@ impl super::Page for ProcessPage {
                 Message::ProcessPageMessage(ProcessMessage::SortCategory(cat))
             })
             .apply(widget::scrollable)
-            .apply(widget::container)
+            .id(widget::Id::new("PROCESS_SCROLLABLE"))
             .height(Length::Fill)
             .apply(Element::from)
     }
@@ -133,13 +148,41 @@ impl super::Page for ProcessPage {
             .item(self.process_model.active())
             .is_some()
         {
+            let theme = cosmic::theme::active();
+            let cosmic = theme.cosmic();
             widget::row()
                 .push(widget::horizontal_space())
+                .spacing(cosmic.space_xxxs())
+                .padding([cosmic.space_xxxs(), cosmic.space_xxs()])
                 .push(
                     fl!("details")
                         .to_string()
                         .apply(widget::button::text)
                         .on_press(Message::ToggleContextPage(ContextPage::PageAbout)),
+                )
+                .push(
+                    fl!("kill")
+                        .to_string()
+                        .apply(widget::button::destructive)
+                        .on_press(Message::ProcessPageMessage(ProcessMessage::KillProcess(
+                            self.process_model
+                                .item(self.process_model.active())
+                                .unwrap()
+                                .process
+                                .pid,
+                        ))),
+                )
+                .push(
+                    fl!("term")
+                        .to_string()
+                        .apply(widget::button::suggested)
+                        .on_press(Message::ProcessPageMessage(ProcessMessage::TermProcess(
+                            self.process_model
+                                .item(self.process_model.active())
+                                .unwrap()
+                                .process
+                                .pid,
+                        ))),
                 )
                 .apply(widget::layer_container)
                 .layer(cosmic::cosmic_theme::Layer::Primary)
@@ -168,128 +211,15 @@ impl super::Page for ProcessPage {
                         fl!("exe"),
                         widget::text::caption(process.exe.clone()),
                     ))
+                    .add(widget::settings::item(
+                        fl!("status"),
+                        widget::text::caption(process.status.clone()),
+                    ))
                     .apply(Element::from),
                 Message::ToggleContextPage(ContextPage::PageAbout),
             ))
         } else {
             None
         }
-    }
-}
-
-struct ProcessTableItem {
-    process: Process,
-    name: Cow<'static, str>,
-    cpu: Cow<'static, str>,
-    gpu: Vec<Cow<'static, str>>,
-    mem: Cow<'static, str>,
-    disk: Cow<'static, str>,
-}
-
-impl ProcessTableItem {
-    fn new(process: Process) -> Self {
-        Self {
-            name: process.displayname.clone().into(),
-            cpu: format!("{}%", process.cpu.round()).into(),
-            gpu: process
-                .gpu
-                .iter()
-                .map(|usage| format!("{}%", usage.round()).into())
-                .collect::<Vec<Cow<str>>>(),
-            mem: get_bytes(process.memory).into(),
-            disk: format!("{}/s", get_bytes(process.disk)).into(),
-            process,
-        }
-    }
-}
-
-impl widget::table::ItemInterface<ProcessTableCategory> for ProcessTableItem {
-    fn get_icon(&self, category: ProcessTableCategory) -> Option<widget::Icon> {
-        match category {
-            ProcessTableCategory::Name => {
-                Some(widget::icon::from_name("applications-system-symbolic").icon())
-            }
-            _ => None,
-        }
-    }
-
-    fn get_text(&self, category: ProcessTableCategory) -> Cow<'static, str> {
-        match category {
-            ProcessTableCategory::Name => self.name.clone(),
-            ProcessTableCategory::Cpu => self.cpu.clone(),
-            ProcessTableCategory::Gpu(num) => self.gpu.get(num as usize).unwrap().clone(),
-            ProcessTableCategory::Mem => self.mem.clone(),
-            ProcessTableCategory::Disk => self.disk.clone(),
-        }
-    }
-
-    fn compare(&self, other: &Self, category: ProcessTableCategory) -> std::cmp::Ordering {
-        match category {
-            ProcessTableCategory::Name => other
-                .process
-                .displayname
-                .to_ascii_lowercase()
-                .cmp(&self.process.displayname.to_ascii_lowercase()),
-            ProcessTableCategory::Cpu => self.process.cpu.partial_cmp(&other.process.cpu).unwrap(),
-            ProcessTableCategory::Gpu(num) => self.process.gpu[num as usize]
-                .partial_cmp(&other.process.gpu[num as usize])
-                .unwrap(),
-            ProcessTableCategory::Mem => self.process.memory.cmp(&other.process.memory),
-            ProcessTableCategory::Disk => self.process.disk.cmp(&other.process.disk),
-        }
-    }
-}
-
-#[derive(Default, Debug, Hash, PartialEq, Eq, Clone, Copy)]
-pub enum ProcessTableCategory {
-    #[default]
-    Name,
-    Cpu,
-    Gpu(u16),
-    Mem,
-    Disk,
-}
-
-impl std::fmt::Display for ProcessTableCategory {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Self::Name => PROC_NAME.as_str(),
-                Self::Cpu => PROC_CPU.as_str(),
-                Self::Gpu(num) => match num {
-                    0 => PROC_GPU0.as_str(),
-                    1 => PROC_GPU1.as_str(),
-                    _ => unreachable!(),
-                },
-                Self::Mem => PROC_MEM.as_str(),
-                Self::Disk => PROC_DISK.as_str(),
-            }
-        )
-    }
-}
-
-impl widget::table::ItemCategory for ProcessTableCategory {
-    fn width(&self) -> cosmic::iced::Length {
-        match self {
-            Self::Name => Length::Fixed(320.0),
-            Self::Cpu => Length::Fixed(80.0),
-            Self::Gpu(_) => Length::Fixed(80.0),
-            Self::Mem => Length::Fixed(120.0),
-            Self::Disk => Length::Fixed(150.0),
-        }
-    }
-}
-
-fn get_bytes(bytes: u64) -> String {
-    if bytes < 1024u64.pow(1) {
-        format!("{} B", bytes)
-    } else if bytes < 1024u64.pow(2) {
-        format!("{:.2} KiB", bytes as f64 / 1024f64.powf(1.))
-    } else if bytes < 1024u64.pow(3) {
-        format!("{:.2} MiB", bytes as f64 / 1024f64.powf(2.))
-    } else {
-        format!("{:.2} GiB", bytes as f64 / 1024f64.powf(3.))
     }
 }

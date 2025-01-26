@@ -3544,7 +3544,6 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "vergen",
- "zbus 5.3.0",
 ]
 
 [[package]]

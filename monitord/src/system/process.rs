@@ -13,6 +13,8 @@ pub struct Process {
     pub cmd: Vec<String>,
     /// The executable of the process
     pub exe: String,
+    /// Status of the process
+    pub status: String,
 
     /// CPU Usage (per-core)
     pub cpu: f32,
@@ -40,6 +42,7 @@ impl Process {
                         .map(|cmd| cmd.to_string_lossy().to_string())
                         .collect::<Vec<String>>(),
                     exe: proc.exe().unwrap_or(Path::new("")).to_string_lossy().into(),
+                    status: proc.status().to_string(),
                     cpu: proc.cpu_usage(),
                     gpu: vec![0.0],
                     memory: proc.memory(),

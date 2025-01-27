@@ -4,14 +4,14 @@ use std::{ffi::OsStr, path::Path};
 pub struct Process {
     /// The internal Process ID
     pub pid: u32,
-    /// The process's name for displaying
+    /// The process's name used for displaying
     pub displayname: String,
 
-    /// The process's "real" name
+    /// The process's internal name
     pub name: String,
-    /// The command line of the process (if it was called with a symlink this is correct)
+    /// The command that executed the process
     pub cmd: Vec<String>,
-    /// The executable of the process
+    /// The path to the executable of the process
     pub exe: String,
     /// Status of the process
     pub status: String,

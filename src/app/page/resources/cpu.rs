@@ -30,13 +30,10 @@ impl super::super::Page for CpuPage {
     }
 
     fn view(&self) -> Element<Message> {
-        let theme = cosmic::theme::active();
-        let cosmic = theme.cosmic();
-        widget::column()
-            .spacing(cosmic.space_m())
+        widget::settings::view_column(vec![])
             .push(
                 widget::settings::section()
-                    .title("Information")
+                    .title("CPU Information")
                     .add(widget::settings::item(
                         "Model",
                         widget::text::caption(
@@ -63,11 +60,33 @@ impl super::super::Page for CpuPage {
                                 .map(|cpuinf| cpuinf.logical_cores.to_string())
                                 .unwrap_or("Not Loaded".to_string()),
                         ),
-                    )),
+                    ))
+                    .extend(
+                        self.cpu_info
+                            .as_ref()
+                            .map(|cpuinf| {
+                                cpuinf
+                                    .caches
+                                    .iter()
+                                    .map(|cache| {
+                                        widget::settings::item(
+                                            format!("{} L{} Cache", cache.cache_type, cache.level),
+                                            widget::text::body(cache.size.to_string()),
+                                        )
+                                        .apply(Element::from)
+                                    })
+                                    .collect::<Vec<Element<Message>>>()
+                            })
+                            .unwrap_or(vec![widget::settings::item(
+                                "Cache Info",
+                                widget::text::body("Not Loaded"),
+                            )
+                            .apply(Element::from)]),
+                    ),
             )
             .push(
                 widget::settings::section()
-                    .title("Statistics")
+                    .title("Current Statistics")
                     .add(widget::settings::item(
                         "Speed",
                         widget::text::body(

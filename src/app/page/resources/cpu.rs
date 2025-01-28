@@ -70,8 +70,10 @@ impl super::super::Page for CpuPage {
                                     .iter()
                                     .map(|cache| {
                                         widget::settings::item(
-                                            format!("{} L{} Cache", cache.cache_type, cache.level),
-                                            widget::text::body(cache.size.to_string()),
+                                            format!("L{} {} Cache", cache.level, cache.cache_type),
+                                            widget::text::body(crate::helpers::get_bytes(
+                                                cache.size as u64,
+                                            )),
                                         )
                                         .apply(Element::from)
                                     })
@@ -92,7 +94,12 @@ impl super::super::Page for CpuPage {
                         widget::text::body(
                             self.cpu_dyn
                                 .as_ref()
-                                .map(|cpudyn| format!("{:.2} GHz", cpudyn.speed as f32 / 1000.0))
+                                .map(|cpudyn| {
+                                    format!(
+                                        "{} GHz",
+                                        crate::helpers::format_number(cpudyn.speed as f64 / 1000.0)
+                                    )
+                                })
                                 .unwrap_or("Not Loaded".to_string()),
                         ),
                     ))

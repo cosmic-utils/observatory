@@ -3,10 +3,20 @@ settings = Settings
 about = About
 view = View
 git-description = Git commit {$hash} on {$date}
+not-loaded = Not Loaded
 
 # Resources
 resources = Resources
 cpu = CPU
+cpu-stats = Statistics
+cpu-speed = Speed
+cpu-usage = Usage
+cpu-info = CPU Information
+cpu-model = Model
+cpu-cores = Cores
+cpu-physical = Physical
+cpu-logical = Logical
+cpu-cache = Cache
 
 # Processes
 processes = Processes

@@ -1,9 +1,21 @@
+use crate::{app::Message, fl, helpers::get_bytes};
+use cosmic::{app::Task, iced, prelude::*, widget};
+use lazy_static::lazy_static;
+use monitord::system::{cpu::CpuDynamic, CpuStatic};
 use std::collections::VecDeque;
 
-use cosmic::{app::Task, iced, prelude::*, widget};
-use monitord::system::{cpu::CpuDynamic, CpuStatic};
-
-use crate::{app::Message, helpers::get_bytes};
+lazy_static! {
+    static ref NOT_LOADED: String = fl!("not-loaded");
+    static ref CPU_STATS: String = fl!("cpu-stats");
+    static ref CPU_SPEED: String = fl!("cpu-speed");
+    static ref CPU_USAGE: String = fl!("cpu-usage");
+    static ref CPU_INFO: String = fl!("cpu-info");
+    static ref CPU_MODEL: String = fl!("cpu-model");
+    static ref CPU_CORES: String = fl!("cpu-cores");
+    static ref CPU_PHYS: String = fl!("cpu-physical");
+    static ref CPU_LOGI: String = fl!("cpu-logical");
+    static ref CPU_CACHE: String = fl!("cpu-cache");
+}
 
 pub struct CpuPage {
     cpu_info: Option<CpuStatic>,
@@ -60,9 +72,9 @@ impl super::super::Page for CpuPage {
                 .push(
                     widget::settings::view_column(vec![
                         widget::settings::section()
-                            .title("Statistics")
+                            .title(CPU_STATS.as_str())
                             .add(widget::settings::item(
-                                "Speed",
+                                CPU_SPEED.as_str(),
                                 widget::text::body(
                                     self.cpu_dyn
                                         .as_ref()
@@ -74,46 +86,49 @@ impl super::super::Page for CpuPage {
                                                 )
                                             )
                                         })
-                                        .unwrap_or("Not Loaded".to_string()),
+                                        .unwrap_or(NOT_LOADED.to_string()),
                                 ),
                             ))
                             .add(widget::settings::item(
-                                "Usage",
+                                CPU_USAGE.as_str(),
                                 widget::text::body(
                                     self.cpu_dyn
                                         .as_ref()
                                         .map(|cpudyn| format!("{}%", cpudyn.usage.round()))
-                                        .unwrap_or("Not Loaded".to_string()),
+                                        .unwrap_or(NOT_LOADED.to_string()),
                                 ),
                             ))
                             .apply(Element::from),
                         widget::settings::section()
-                            .title("CPU Information")
+                            .title(CPU_INFO.as_str())
                             .add(widget::settings::item(
-                                "Model",
+                                CPU_MODEL.as_str(),
                                 widget::text::body(
                                     self.cpu_info
                                         .as_ref()
                                         .map(|cpu_inf| cpu_inf.model.clone())
-                                        .unwrap_or("Not Loaded".to_string()),
+                                        .unwrap_or(NOT_LOADED.to_string()),
                                 ),
                             ))
                             .add(widget::settings::item(
-                                "Cores",
+                                CPU_CORES.as_str(),
                                 widget::text::body(
                                     self.cpu_info
                                         .as_ref()
                                         .map(|cpu_inf| {
                                             format!(
-                                                "{} Physical, {} Logical",
-                                                cpu_inf.physical_cores, cpu_inf.logical_cores
+                                                "{} {}, {} {}",
+                                                cpu_inf.physical_cores,
+                                                CPU_PHYS.as_str(),
+                                                cpu_inf.logical_cores,
+                                                CPU_LOGI.as_str(),
                                             )
                                         })
-                                        .unwrap_or("Not Loaded".to_string()),
+                                        .unwrap_or(NOT_LOADED.to_string()),
                                 ),
                             ))
                             .add(widget::settings::item(
-                                "Cache",
+                                CPU_CACHE.as_str(),
                                 widget::column().extend(
                                     self.cpu_info
                                         .as_ref()

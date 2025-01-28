@@ -1,6 +1,10 @@
 pub mod cpu;
-use cpu::CpuDynamic;
+pub use cpu::CpuDynamic;
 pub use cpu::CpuStatic;
+
+pub mod memory;
+use memory::MemoryDynamic;
+use memory::MemoryStatic;
 
 pub mod process;
 pub use process::Process;
@@ -10,6 +14,8 @@ pub struct SystemSnapshot {
     pub processes: Vec<Process>,
     pub cpu_static_info: CpuStatic,
     pub cpu_dynamic_info: CpuDynamic,
+    pub mem_static_info: MemoryStatic,
+    pub mem_dynamic_info: MemoryDynamic,
 }
 
 #[zbus::proxy(
@@ -30,11 +36,14 @@ impl SystemSnapshot {
     #[allow(unused)]
     pub(crate) fn load(system: &mut sysinfo::System) -> Self {
         system.refresh_cpu_all();
+        system.refresh_memory();
         system.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
         SystemSnapshot {
             processes: Process::load_all(system),
             cpu_static_info: cpu::CPU_STATIC.clone(),
             cpu_dynamic_info: CpuDynamic::load(system),
+            mem_static_info: memory::MEMORY_STATIC.clone(),
+            mem_dynamic_info: MemoryDynamic::load(system),
         }
     }
 }

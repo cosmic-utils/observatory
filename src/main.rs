@@ -2,6 +2,7 @@
 
 mod app;
 mod config;
+mod helpers;
 mod i18n;
 
 fn main() -> cosmic::iced::Result {

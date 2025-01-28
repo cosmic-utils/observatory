@@ -1,4 +1,4 @@
-use crate::fl;
+use crate::{fl, helpers};
 use cosmic::{iced::Length, widget};
 use lazy_static::lazy_static;
 use monitord::system::Process;
@@ -32,8 +32,8 @@ impl ProcessTableItem {
                 .iter()
                 .map(|usage| format!("{}%", usage.round()).into())
                 .collect::<Vec<Cow<str>>>(),
-            mem: get_bytes(process.memory).into(),
-            disk: format!("{}/s", get_bytes(process.disk)).into(),
+            mem: helpers::get_bytes(process.memory).into(),
+            disk: format!("{}/s", helpers::get_bytes(process.disk)).into(),
             process,
         }
     }
@@ -114,17 +114,5 @@ impl widget::table::ItemCategory for ProcessTableCategory {
             Self::Mem => Length::Fixed(120.0),
             Self::Disk => Length::Fixed(150.0),
         }
-    }
-}
-
-fn get_bytes(bytes: u64) -> String {
-    if bytes < 1024u64.pow(1) {
-        format!("{} B", bytes)
-    } else if bytes < 1024u64.pow(2) {
-        format!("{:.2} KiB", bytes as f64 / 1024f64.powf(1.))
-    } else if bytes < 1024u64.pow(3) {
-        format!("{:.2} MiB", bytes as f64 / 1024f64.powf(2.))
-    } else {
-        format!("{:.2} GiB", bytes as f64 / 1024f64.powf(3.))
     }
 }

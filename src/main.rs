@@ -4,6 +4,7 @@ mod app;
 mod config;
 mod helpers;
 mod i18n;
+mod widget;
 
 fn main() -> cosmic::iced::Result {
     // Set up logging

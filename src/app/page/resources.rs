@@ -52,7 +52,7 @@ impl super::Page for ResourcePage {
         let cosmic = theme.cosmic();
         widget::column()
             .spacing(cosmic.space_s())
-            .push(widget::tab_bar::horizontal(&self.tabs))
+            .push(widget::tab_bar::horizontal(&self.tabs).button_spacing(cosmic.space_xxs()))
             .push(
                 self.tabs
                     .active_data::<Box<dyn super::Page>>()

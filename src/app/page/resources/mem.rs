@@ -4,7 +4,7 @@ use cosmic::{app::Task, iced, prelude::*, widget};
 use lazy_static::lazy_static;
 use monitord::system::memory::{MemoryDynamic, MemoryStatic};
 
-use crate::{app::Message, fl};
+use crate::{app::Message, config::Config, fl};
 
 lazy_static! {
     static ref NOT_LOADED: Cow<'static, str> = fl!("not-loaded").into();
@@ -14,14 +14,17 @@ pub struct MemoryPage {
     mem_info: Option<MemoryStatic>,
     mem_dyn: Option<MemoryDynamic>,
 
+    config: Config,
+
     usage_history: VecDeque<f32>,
 }
 
 impl MemoryPage {
-    pub fn new() -> Self {
+    pub fn new(config: Config) -> Self {
         Self {
             mem_info: None,
             mem_dyn: None,
+            config,
             usage_history: vec![0.0; 30].into(),
         }
     }
@@ -40,6 +43,7 @@ impl super::super::Page for MemoryPage {
                 );
                 self.usage_history.pop_front();
             }
+            Message::UpdateConfig(config) => self.config = config,
             _ => {}
         }
         Task::none()

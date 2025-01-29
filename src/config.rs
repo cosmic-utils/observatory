@@ -6,4 +6,5 @@ use cosmic::cosmic_config::{self, cosmic_config_derive::CosmicConfigEntry, Cosmi
 #[version = 1]
 pub struct Config {
     pub scale_by_core: bool,
+    pub multicore_view: bool,
 }

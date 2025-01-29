@@ -18,19 +18,23 @@ pub struct ResourcePage {
 impl ResourcePage {
     pub fn new(config: Config) -> Self {
         Self {
-            tabs: widget::segmented_button::SingleSelectModel::builder()
-                .insert(|b| {
-                    b.text(fl!("cpu"))
-                        .icon(widget::icon::from_name("firmware-manager-symbolic"))
-                        .data(Box::new(cpu::CpuPage::new()) as Box<dyn super::Page>)
-                        .activate()
-                })
-                .insert(|b| {
-                    b.text(fl!("mem"))
-                        .icon(widget::icon::from_name("firmware-manager-symbolic"))
-                        .data(Box::new(mem::MemoryPage::new()) as Box<dyn super::Page>)
-                })
-                .build(),
+            tabs:
+                widget::segmented_button::SingleSelectModel::builder()
+                    .insert(|b| {
+                        b.text(fl!("cpu"))
+                            .icon(widget::icon::from_name("firmware-manager-symbolic"))
+                            .data(
+                                Box::new(cpu::CpuPage::new(config.clone())) as Box<dyn super::Page>
+                            )
+                            .activate()
+                    })
+                    .insert(|b| {
+                        b.text(fl!("mem"))
+                            .icon(widget::icon::from_name("firmware-manager-symbolic"))
+                            .data(Box::new(mem::MemoryPage::new(config.clone()))
+                                as Box<dyn super::Page>)
+                    })
+                    .build(),
             config,
         }
     }

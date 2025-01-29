@@ -21,8 +21,8 @@ impl Program<crate::app::Message, Theme> for LineGraph {
         let bounds = iced::Rectangle::new(
             iced::Point::new(0.0, 0.0),
             iced::Size::new(
-                bounds.width.min(bounds.height * 1.2),
-                bounds.height.min(bounds.width * 1.2),
+                bounds.width.min(bounds.height),
+                bounds.height.min(bounds.width),
             ),
         );
         let mut frame = Frame::new(renderer, bounds.size());

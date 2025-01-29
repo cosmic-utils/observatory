@@ -3,11 +3,43 @@ lazy_static::lazy_static!(
 );
 
 #[derive(zbus::zvariant::Type, serde::Serialize, serde::Deserialize, Debug, Clone)]
+pub enum CacheType {
+    Null,
+    Data,
+    Instruction,
+    Unified,
+    Reserved,
+}
+
+impl CacheType {
+    fn from_cpuid(cache_type: raw_cpuid::CacheType) -> Self {
+        use raw_cpuid::CacheType;
+        match cache_type {
+            CacheType::Null => Self::Null,
+            CacheType::Data => Self::Data,
+            CacheType::Instruction => Self::Instruction,
+            CacheType::Unified => Self::Unified,
+            CacheType::Reserved => Self::Reserved,
+        }
+    }
+}
+
+#[derive(zbus::zvariant::Type, serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub struct CpuCache {
     pub size: usize,
     pub level: u8,
-    pub cache_type: String,
+    pub cache_type: CacheType,
 }
+
+/// Intel-only P-Core and E-Core
+#[derive(zbus::zvariant::Type, serde::Serialize, serde::Deserialize, Debug, Clone)]
+pub enum PerformanceLevel {
+    PCore,
+    ECore,
+}
+
+#[derive(zbus::zvariant::Type, serde::Serialize, serde::Deserialize, Debug, Clone)]
+pub struct CpuCore {}
 
 #[derive(zbus::zvariant::Type, serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub struct CpuStatic {
@@ -30,7 +62,7 @@ impl CpuStatic {
                 caches.push(CpuCache {
                     size,
                     level: cache.level(),
-                    cache_type: cache.cache_type().to_string(),
+                    cache_type: CacheType::from_cpuid(cache.cache_type()),
                 })
             }
             caches
@@ -58,6 +90,7 @@ impl CpuStatic {
 pub struct CpuDynamic {
     pub speed: u64,
     pub usage: f32,
+    pub usage_by_core: Vec<f32>,
 }
 
 impl CpuDynamic {
@@ -70,6 +103,11 @@ impl CpuDynamic {
                 .unwrap()
                 .frequency(),
             usage: system.global_cpu_usage(),
+            usage_by_core: system
+                .cpus()
+                .iter()
+                .map(|cpu| cpu.cpu_usage())
+                .collect::<Vec<f32>>(),
         }
     }
 }

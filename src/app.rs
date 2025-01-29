@@ -45,6 +45,7 @@ pub enum Message {
     LaunchUrl(String),
     // Settings
     SetScaleByCore(bool),
+    SetMulticoreView(bool),
 
     Snapshot(Arc<monitord::system::SystemSnapshot>),
 
@@ -284,6 +285,15 @@ impl Application for AppModel {
                     .unwrap();
             }
 
+            Message::SetMulticoreView(state) => {
+                self.config
+                    .set_multicore_view(
+                        &cosmic_config::Config::new(Self::APP_ID, Config::VERSION).unwrap(),
+                        state,
+                    )
+                    .unwrap();
+            }
+
             _ => {}
         }
 
@@ -340,17 +350,24 @@ impl AppModel {
     }
 
     pub fn settings(&self) -> Element<Message> {
-        let cosmic_theme::Spacing { space_xxs, .. } = theme::active().cosmic().spacing;
-
-        widget::column()
-            .spacing(space_xxs)
-            .push(widget::settings::section().title("Process Settings").add(
-                widget::settings::item(
+        widget::settings::view_column(vec![
+            widget::settings::section()
+                .title("Process Settings")
+                .add(widget::settings::item(
                     "Scale Usage By Core",
                     widget::toggler(self.config.scale_by_core).on_toggle(Message::SetScaleByCore),
-                ),
-            ))
-            .apply(Element::from)
+                ))
+                .apply(Element::from),
+            widget::settings::section()
+                .title("Resource Settings")
+                .add(widget::settings::item(
+                    "Show Per-Core Usage Graphs",
+                    widget::toggler(self.config.multicore_view)
+                        .on_toggle(Message::SetMulticoreView),
+                ))
+                .apply(Element::from),
+        ])
+        .apply(Element::from)
     }
 
     /// Updates the header and window titles.

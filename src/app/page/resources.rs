@@ -1,4 +1,5 @@
 mod cpu;
+mod disk;
 mod mem;
 
 use crate::{app::Message, config::Config, fl};
@@ -18,23 +19,25 @@ pub struct ResourcePage {
 impl ResourcePage {
     pub fn new(config: Config) -> Self {
         Self {
-            tabs:
-                widget::segmented_button::SingleSelectModel::builder()
-                    .insert(|b| {
-                        b.text(fl!("cpu"))
-                            .icon(widget::icon::from_name("firmware-manager-symbolic"))
-                            .data(
-                                Box::new(cpu::CpuPage::new(config.clone())) as Box<dyn super::Page>
-                            )
-                            .activate()
-                    })
-                    .insert(|b| {
-                        b.text(fl!("mem"))
+            tabs: widget::segmented_button::SingleSelectModel::builder()
+                .insert(|b| {
+                    b.text(fl!("cpu"))
+                        .icon(widget::icon::from_name("firmware-manager-symbolic"))
+                        .data(Box::new(cpu::CpuPage::new(config.clone())) as Box<dyn super::Page>)
+                        .activate()
+                })
+                .insert(|b| {
+                    b.text(fl!("mem"))
                             .icon(widget::icon::from_name("firmware-manager-symbolic"))
                             .data(Box::new(mem::MemoryPage::new(config.clone()))
                                 as Box<dyn super::Page>)
-                    })
-                    .build(),
+                })
+                .insert(|b| {
+                    b.text(fl!("disk"))
+                        .icon(widget::icon::from_name("drive-harddisk-system-symbolic"))
+                        .data(Box::new(disk::DiskPage::new(config.clone())) as Box<dyn super::Page>)
+                })
+                .build(),
             config,
         }
     }

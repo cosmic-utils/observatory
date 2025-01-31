@@ -100,15 +100,6 @@ impl Application for AppModel {
         };
         app.nav
             .insert()
-            .text(fl!("resources"))
-            .data(
-                Box::new(page::resources::ResourcePage::new(app.config.clone()))
-                    as Box<dyn page::Page>,
-            )
-            .icon(icon::from_name("utilities-system-monitor-symbolic"));
-
-        app.nav
-            .insert()
             .text(fl!("processes"))
             .data(
                 Box::new(page::processes::ProcessPage::new(app.config.clone()))
@@ -116,6 +107,14 @@ impl Application for AppModel {
             )
             .icon(icon::from_name("utilities-terminal-symbolic"))
             .activate();
+        app.nav
+            .insert()
+            .text(fl!("resources"))
+            .data(
+                Box::new(page::resources::ResourcePage::new(app.config.clone()))
+                    as Box<dyn page::Page>,
+            )
+            .icon(icon::from_name("utilities-system-monitor-symbolic"));
 
         // Create a startup command that sets the window title.
         let command = app.update_title();

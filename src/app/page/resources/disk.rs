@@ -76,6 +76,7 @@ impl Page for DiskPage {
                 .push(
                     widget::settings::view_column(vec![widget::settings::section()
                         .title("Statistics")
+                        .add("TODO".apply(widget::text::heading))
                         .apply(Element::from)])
                     .extend(
                         self.disk_info

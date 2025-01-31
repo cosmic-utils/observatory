@@ -1,7 +1,3 @@
-lazy_static::lazy_static!(
-    pub static ref CPU_STATIC: CpuStatic = CpuStatic::load();
-);
-
 #[derive(zbus::zvariant::Type, serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub enum CacheType {
     Null,
@@ -71,7 +67,7 @@ impl CpuStatic {
         }
     }
 
-    fn load() -> Self {
+    pub(crate) async fn load() -> Self {
         let cpuid = raw_cpuid::CpuId::new();
         Self {
             model: cpuid
@@ -94,7 +90,7 @@ pub struct CpuDynamic {
 }
 
 impl CpuDynamic {
-    pub fn load(system: &sysinfo::System) -> Self {
+    pub async fn load(system: &sysinfo::System) -> Self {
         Self {
             speed: system
                 .cpus()

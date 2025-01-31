@@ -62,7 +62,7 @@ impl super::Page for ProcessPage {
                 self.process_model.clear();
                 for process in snapshot.processes.iter().cloned().map(|mut process| {
                     if !self.config.scale_by_core {
-                        process.cpu /= snapshot.cpu_static_info.logical_cores as f32;
+                        process.cpu /= snapshot.cpu.0.logical_cores as f32;
                     }
                     process
                 }) {

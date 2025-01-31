@@ -3,8 +3,11 @@ pub use cpu::CpuDynamic;
 pub use cpu::CpuStatic;
 
 pub mod memory;
+use disk::DiskStatic;
 use memory::MemoryDynamic;
 use memory::MemoryStatic;
+
+pub mod disk;
 
 pub mod process;
 pub use process::Process;
@@ -12,10 +15,9 @@ pub use process::Process;
 #[derive(zbus::zvariant::Type, serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub struct SystemSnapshot {
     pub processes: Vec<Process>,
-    pub cpu_static_info: CpuStatic,
-    pub cpu_dynamic_info: CpuDynamic,
-    pub mem_static_info: MemoryStatic,
-    pub mem_dynamic_info: MemoryDynamic,
+    pub cpu: (CpuStatic, CpuDynamic),
+    pub mem: (MemoryStatic, MemoryDynamic),
+    pub disk: Vec<(DiskStatic, u8)>,
 }
 
 #[zbus::proxy(
@@ -32,40 +34,80 @@ pub trait SystemSnapshot {
     fn term_process(&self, pid: u32) -> zbus::Result<bool>;
 }
 
-impl SystemSnapshot {
-    #[allow(unused)]
-    pub(crate) fn load(system: &mut sysinfo::System) -> Self {
-        system.refresh_cpu_all();
-        system.refresh_memory();
-        system.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
-        SystemSnapshot {
-            processes: Process::load_all(system),
-            cpu_static_info: cpu::CPU_STATIC.clone(),
-            cpu_dynamic_info: CpuDynamic::load(system),
-            mem_static_info: memory::MEMORY_STATIC.clone(),
-            mem_dynamic_info: MemoryDynamic::load(system),
-        }
-    }
-}
-
 // === SYSTEM SERVER FOR DBUS ===
 #[allow(unused)]
-pub(crate) struct SystemServer {
+pub(crate) struct SystemSnapshotServer {
     system: sysinfo::System,
+
+    cpu_static: CpuStatic,
+    mem_static: MemoryStatic,
+    disk_static: Vec<DiskStatic>,
 }
 
 #[allow(unused)]
-impl SystemServer {
-    pub(crate) fn new() -> Self {
-        Self {
+impl SystemSnapshotServer {
+    pub(crate) async fn run() -> zbus::Result<()> {
+        let (cpu_static, mem_static, disk_static) =
+            tokio::join!(CpuStatic::load(), MemoryStatic::load(), DiskStatic::load());
+
+        let server = Self {
             system: sysinfo::System::new_all(),
+            cpu_static,
+            mem_static,
+            disk_static,
+        };
+
+        let connection = zbus::connection::Builder::session()?
+            .name("io.github.CosmicUtils.Observatory")?
+            .serve_at("/io/github/CosmicUtils/Observatory", server)?
+            .build()
+            .await?;
+        tracing::info!("monitord dbus created");
+
+        loop {
+            let server: zbus::object_server::InterfaceRef<SystemSnapshotServer> = connection
+                .object_server()
+                .interface("/io/github/CosmicUtils/Observatory")
+                .await?;
+
+            let system = &mut server.get_mut().await;
+            let snapshot = system.load();
+
+            server.snapshot(snapshot.await?).await?;
+
+            std::thread::sleep(std::time::Duration::from_secs(1));
         }
+
+        Ok(())
+    }
+
+    pub(crate) async fn load(&mut self) -> zbus::Result<SystemSnapshot> {
+        self.system.refresh_cpu_all();
+        self.system.refresh_memory();
+        self.system
+            .refresh_processes(sysinfo::ProcessesToUpdate::All, true);
+        let (processes, cpu_dynamic_info, mem_dynamic_info) = tokio::join!(
+            Process::load_all(&self.system),
+            CpuDynamic::load(&self.system),
+            MemoryDynamic::load(&self.system),
+        );
+        Ok(SystemSnapshot {
+            processes,
+            cpu: (self.cpu_static.clone(), cpu_dynamic_info),
+            mem: (self.mem_static.clone(), mem_dynamic_info),
+            disk: self
+                .disk_static
+                .iter()
+                .cloned()
+                .zip(vec![0u8].into_iter())
+                .collect::<Vec<(DiskStatic, u8)>>(),
+        })
     }
 }
 
 #[allow(unused)]
 #[zbus::interface(name = "io.github.CosmicUtils.Observatory.SystemSnapshot")]
-impl SystemServer {
+impl SystemSnapshotServer {
     #[zbus(signal)]
     pub(crate) async fn snapshot(
         signal_emitter: &zbus::object_server::SignalEmitter<'_>,

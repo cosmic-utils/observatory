@@ -20,6 +20,11 @@ cpu-cores = Cores
 cpu-physical = Physical
 cpu-logical = Logical
 cpu-cache = Cache
+cpu-cache-null = Null
+cpu-cache-data = Data
+cpu-cache-inst = Instruction
+cpu-cache-unif = Unified
+cpu-cache-resv = Reserved
 
 
 # Processes

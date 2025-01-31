@@ -183,11 +183,11 @@ impl super::super::Page for CpuPage {
                                                         "L{} {}: {}",
                                                         cache.level,
                                                         match cache.cache_type {
-                                                                monitord::system::cpu::CacheType::Null => "Null",
-                                                                monitord::system::cpu::CacheType::Data => "Data",
-                                                                monitord::system::cpu::CacheType::Instruction => "Instruction",
-                                                                monitord::system::cpu::CacheType::Unified => "Unified",
-                                                                monitord::system::cpu::CacheType::Reserved => "Reserved",
+                                                                monitord::system::cpu::CacheType::Null => fl!("cpu-cache-null"),
+                                                                monitord::system::cpu::CacheType::Data => fl!("cpu-cache-data"),
+                                                                monitord::system::cpu::CacheType::Instruction => fl!("cpu-cache-inst"),
+                                                                monitord::system::cpu::CacheType::Unified => fl!("cpu-cache-unif"),
+                                                                monitord::system::cpu::CacheType::Reserved => fl!("cpu-cache-resv"),
                                                         },
                                                         get_bytes(cache.size as u64)
                                                     ))

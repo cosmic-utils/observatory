@@ -8,6 +8,12 @@ use crate::{app::Message, config::Config, fl};
 
 lazy_static! {
     static ref NOT_LOADED: Cow<'static, str> = fl!("not-loaded").into();
+    static ref MEM_STATS: Cow<'static, str> = fl!("mem-stats").into();
+    static ref MEM_USAGE: Cow<'static, str> = fl!("mem-usage").into();
+    static ref SWP_USAGE: Cow<'static, str> = fl!("swp-usage").into();
+    static ref MEM_INFO: Cow<'static, str> = fl!("mem-info").into();
+    static ref MEM_CAP: Cow<'static, str> = fl!("mem-cap").into();
+    static ref SWP_CAP: Cow<'static, str> = fl!("swp-cap").into();
 }
 
 pub struct MemoryPage {
@@ -65,9 +71,9 @@ impl super::super::Page for MemoryPage {
                 )
                 .push(widget::settings::view_column(vec![
                     widget::settings::section()
-                        .title("Statistics")
+                        .title(MEM_STATS.clone())
                         .add(widget::settings::item(
-                            "Physical Usage",
+                            MEM_USAGE.clone(),
                             widget::text::body(
                                 self.mem_dyn
                                     .as_ref()
@@ -76,7 +82,7 @@ impl super::super::Page for MemoryPage {
                             ),
                         ))
                         .add(widget::settings::item(
-                            "Swap Usage",
+                            SWP_USAGE.clone(),
                             widget::text::body(
                                 self.mem_dyn
                                     .as_ref()
@@ -86,9 +92,9 @@ impl super::super::Page for MemoryPage {
                         ))
                         .apply(Element::from),
                     widget::settings::section()
-                        .title("Memory Information")
+                        .title(MEM_INFO.clone())
                         .add(widget::settings::item(
-                            "Physical Capacity",
+                            MEM_CAP.clone(),
                             widget::text::body(
                                 self.mem_info
                                     .as_ref()
@@ -99,7 +105,7 @@ impl super::super::Page for MemoryPage {
                             ),
                         ))
                         .add(widget::settings::item(
-                            "Swap Capacity",
+                            SWP_CAP.clone(),
                             widget::text::body(
                                 self.mem_info
                                     .as_ref()

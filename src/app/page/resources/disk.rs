@@ -6,9 +6,9 @@ use lazy_static::lazy_static;
 use monitord::system::disk::DiskStatic;
 
 lazy_static! {
-    static ref DISK_STATS: Cow<'static, str> = fl!("disk-stats");
-    static ref DISK_DEV: Cow<'static, str> = fl!("disk-dev");
-    static ref DISK_CAP: Cow<'static, str> = fl!("disk-cap");
+    static ref DISK_STATS: Cow<'static, str> = fl!("disk-stats").into();
+    static ref DISK_DEV: Cow<'static, str> = fl!("disk-dev").into();
+    static ref DISK_CAP: Cow<'static, str> = fl!("disk-cap").into();
 }
 
 use crate::{

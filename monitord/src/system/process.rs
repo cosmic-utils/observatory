@@ -27,7 +27,7 @@ pub struct Process {
 }
 
 impl Process {
-    pub(crate) fn load_all(system: &sysinfo::System) -> Vec<Process> {
+    pub(crate) async fn load_all(system: &sysinfo::System) -> Vec<Process> {
         let mut processes = Vec::new();
 
         for (pid, proc) in system.processes() {

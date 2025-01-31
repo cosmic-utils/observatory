@@ -47,22 +47,19 @@ impl super::super::Page for CpuPage {
     fn update(&mut self, msg: Message) -> Task<Message> {
         match msg {
             Message::Snapshot(snapshot) => {
-                self.cpu_info = Some(snapshot.cpu_static_info.clone());
-                self.cpu_dyn = Some(snapshot.cpu_dynamic_info.clone());
-                self.usage_history
-                    .push_back(snapshot.cpu_dynamic_info.usage);
+                self.cpu_info = Some(snapshot.cpu.0.clone());
+                self.cpu_dyn = Some(snapshot.cpu.1.clone());
+                self.usage_history.push_back(snapshot.cpu.1.usage);
                 self.usage_history.pop_front();
 
                 if self.per_core_usage_history.is_empty() {
-                    self.per_core_usage_history.resize(
-                        snapshot.cpu_dynamic_info.usage_by_core.len(),
-                        vec![0.0; 30].into(),
-                    )
+                    self.per_core_usage_history
+                        .resize(snapshot.cpu.1.usage_by_core.len(), vec![0.0; 30].into())
                 }
                 for (usage_history, usage) in self
                     .per_core_usage_history
                     .iter_mut()
-                    .zip(snapshot.cpu_dynamic_info.usage_by_core.iter().cloned())
+                    .zip(snapshot.cpu.1.usage_by_core.iter().cloned())
                 {
                     usage_history.push_back(usage);
                     usage_history.pop_front();

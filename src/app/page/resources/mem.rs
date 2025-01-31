@@ -34,11 +34,10 @@ impl super::super::Page for MemoryPage {
     fn update(&mut self, msg: Message) -> Task<Message> {
         match msg {
             Message::Snapshot(snapshot) => {
-                self.mem_info = Some(snapshot.mem_static_info.clone());
-                self.mem_dyn = Some(snapshot.mem_dynamic_info.clone());
+                self.mem_info = Some(snapshot.mem.0.clone());
+                self.mem_dyn = Some(snapshot.mem.1.clone());
                 self.usage_history.push_back(
-                    (snapshot.mem_dynamic_info.resident as f64
-                        / snapshot.mem_static_info.resident_capacity as f64)
+                    (snapshot.mem.1.resident as f64 / snapshot.mem.0.resident_capacity as f64)
                         as f32,
                 );
                 self.usage_history.pop_front();

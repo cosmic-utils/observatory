@@ -1,9 +1,3 @@
-use lazy_static::lazy_static;
-
-lazy_static! {
-    pub static ref MEMORY_STATIC: MemoryStatic = MemoryStatic::load();
-}
-
 #[derive(zbus::zvariant::Type, serde::Serialize, serde::Deserialize, Debug, Clone)]
 pub struct MemoryStatic {
     pub resident_capacity: usize,
@@ -12,7 +6,7 @@ pub struct MemoryStatic {
 }
 
 impl MemoryStatic {
-    fn load() -> Self {
+    pub(crate) async fn load() -> Self {
         let sys = sysinfo::System::new_with_specifics(
             sysinfo::RefreshKind::nothing().with_memory(sysinfo::MemoryRefreshKind::everything()),
         );
@@ -32,7 +26,7 @@ pub struct MemoryDynamic {
 }
 
 impl MemoryDynamic {
-    pub fn load(system: &sysinfo::System) -> Self {
+    pub(crate) async fn load(system: &sysinfo::System) -> Self {
         Self {
             resident: system.used_memory() as usize,
             swap: system.used_swap() as usize,

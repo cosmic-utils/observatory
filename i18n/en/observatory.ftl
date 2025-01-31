@@ -4,10 +4,13 @@ about = About
 view = View
 git-description = Git commit {$hash} on {$date}
 not-loaded = Not Loaded
+cpu = CPU
+gpu = GPU { $num }
+mem = Memory
+disk = Disk
 
 # Resources
 resources = Resources
-cpu = CPU
 cpu-stats = Statistics
 cpu-speed = Speed
 cpu-usage = Usage
@@ -17,6 +20,7 @@ cpu-cores = Cores
 cpu-physical = Physical
 cpu-logical = Logical
 cpu-cache = Cache
+
 
 # Processes
 processes = Processes
@@ -31,7 +35,3 @@ exe = Executable
 status = Status
 
 name = Name
-cpu = CPU
-gpu = GPU { $num }
-mem = Memory
-disk = Disk

@@ -31,6 +31,9 @@ swp-usage = Swap Usage
 mem-info = Memory Information
 mem-cap = Physical Capacity
 swp-cap = Swap Capacity
+disk-stats = Statistics
+disk-dev = Device
+disk-cap = Capacity
 
 # Processes
 processes = Processes

@@ -1,7 +1,15 @@
-use std::collections::VecDeque;
+use std::{borrow::Cow, collections::VecDeque};
 
+use crate::fl;
 use cosmic::{app::Task, iced, prelude::*, widget};
+use lazy_static::lazy_static;
 use monitord::system::disk::DiskStatic;
+
+lazy_static! {
+    static ref DISK_STATS: Cow<'static, str> = fl!("disk-stats");
+    static ref DISK_DEV: Cow<'static, str> = fl!("disk-dev");
+    static ref DISK_CAP: Cow<'static, str> = fl!("disk-cap");
+}
 
 use crate::{
     app::{page::Page, Message},
@@ -75,7 +83,7 @@ impl Page for DiskPage {
                 )
                 .push(
                     widget::settings::view_column(vec![widget::settings::section()
-                        .title("Statistics")
+                        .title(DISK_STATS.clone())
                         .add("TODO".apply(widget::text::heading))
                         .apply(Element::from)])
                     .extend(
@@ -88,11 +96,11 @@ impl Page for DiskPage {
                                         widget::settings::section()
                                             .title(disk.model.clone())
                                             .add(widget::settings::item(
-                                                "Device",
+                                                DISK_DEV.clone(),
                                                 disk.device.clone().apply(widget::text::body),
                                             ))
                                             .add(widget::settings::item(
-                                                "Capacity",
+                                                DISK_CAP.clone(),
                                                 disk.size
                                                     .apply(crate::helpers::get_bytes)
                                                     .apply(widget::text::body),

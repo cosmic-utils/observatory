@@ -25,7 +25,12 @@ cpu-cache-data = Data
 cpu-cache-inst = Instruction
 cpu-cache-unif = Unified
 cpu-cache-resv = Reserved
-
+mem-stats = Statistics
+mem-usage = Physical Usage
+swp-usage = Swap Usage
+mem-info = Memory Information
+mem-cap = Physical Capacity
+swp-cap = Swap Capacity
 
 # Processes
 processes = Processes

@@ -7,7 +7,7 @@ pub struct Interface<'a> {
 
 impl<'a> Interface<'a> {
     pub async fn init() -> zbus::Result<Self> {
-        let connection = zbus::Connection::session().await?;
+        let connection = zbus::Connection::system().await?;
         let proxy = system::SystemSnapshotProxy::builder(&connection)
             .build()
             .await?;

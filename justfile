@@ -12,6 +12,14 @@ bind-src := named / 'target' / 'release' / named
 bin-dst := base-dir / 'bin' / name
 bind-dst := base-dir / 'bin' / named
 
+daemon := 'monitord.service'
+daemon-src := 'resources' / daemon
+daemon-dst := clean(rootdir / 'etc') / 'systemd' / 'system' / daemon
+
+policy := appid + '.conf'
+policy-src := 'resources' / 'app.policy'
+policy-dst := clean(rootdir / prefix) / 'share' / 'dbus-1' / 'system.d' / policy
+
 desktop := appid + '.desktop'
 desktop-src := 'resources' / desktop
 desktop-dst := clean(rootdir / prefix) / 'share' / 'applications' / desktop
@@ -66,6 +74,11 @@ run *args:
 install:
     install -Dm0755 {{bin-src}} {{bin-dst}}
     install -Dm0755 {{bind-src}} {{bind-dst}}
+    install -Dm0664 {{daemon-src}} {{daemon-dst}}
+    install -Dm0664 {{policy-src}} {{policy-dst}}
+    systemctl daemon-reload
+    systemctl enable {{daemon}}
+    systemctl start {{daemon}}
     install -Dm0644 resources/app.desktop {{desktop-dst}}
     install -Dm0644 resources/app.metainfo.xml {{appdata-dst}}
 

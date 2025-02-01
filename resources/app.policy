@@ -1,0 +1,14 @@
+<!DOCTYPE busconfig PUBLIC
+          "-//freedesktop//DTD D-BUS Bus Configuration 1.0//EN"
+          "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+<busconfig>
+    <policy context="default">
+        <allow send_destination="io.github.CosmicUtils.Observatory"/>
+        <allow receive_sender="io.github.CosmicUtils.Observatory"/>
+    </policy>
+    <policy user="root">
+        <allow own="io.github.CosmicUtils.Observatory"/>
+        <allow send_destination="io.github.CosmicUtils.Observatory"/>
+        <allow receive_sender="io.github.CosmicUtils.Observatory"/>
+    </policy>
+</busconfig>

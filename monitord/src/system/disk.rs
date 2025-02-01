@@ -64,6 +64,7 @@ impl DiskStatic {
             }
         }
 
+        tracing::info!("Read all drives");
         disks
     }
 }

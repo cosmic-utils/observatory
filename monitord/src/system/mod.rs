@@ -59,13 +59,16 @@ impl SystemSnapshotServer {
             mem_static,
             disk_static,
         };
+        tracing::info!("Server initialized");
 
-        let connection = zbus::connection::Builder::session()?
-            .name("io.github.CosmicUtils.Observatory")?
+        let connection = zbus::connection::Builder::system()?
             .serve_at("/io/github/CosmicUtils/Observatory", server)?
+            .name("io.github.CosmicUtils.Observatory")?
             .build()
             .await?;
         tracing::info!("monitord dbus created");
+
+        let _ = sd_notify::notify(true, &[sd_notify::NotifyState::Ready]);
 
         loop {
             let server: zbus::object_server::InterfaceRef<SystemSnapshotServer> = connection

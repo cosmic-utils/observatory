@@ -3552,7 +3552,7 @@ dependencies = [
 
 [[package]]
 name = "observatory"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "futures-util",
  "i18n-embed",

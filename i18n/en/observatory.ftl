@@ -32,6 +32,8 @@ mem-info = Memory Information
 mem-cap = Physical Capacity
 swp-cap = Swap Capacity
 disk-stats = Statistics
+disk-read = Read Bytes
+disk-write = Written Bytes
 disk-dev = Device
 disk-cap = Capacity
 

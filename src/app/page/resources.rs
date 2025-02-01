@@ -8,6 +8,7 @@ use cosmic::{app::Task, prelude::*, widget};
 #[derive(Debug, Clone)]
 pub enum ResourceMessage {
     SelectTab(widget::segmented_button::Entity),
+    SelectDiskTab(widget::segmented_button::Entity),
 }
 
 pub struct ResourcePage {
@@ -49,6 +50,7 @@ impl super::Page for ResourcePage {
         match msg.clone() {
             Message::ResourcePageMessage(rmsg) => match rmsg {
                 ResourceMessage::SelectTab(tab) => self.tabs.activate(tab),
+                _ => {}
             },
             Message::UpdateConfig(config) => self.config = config,
             _ => {}

@@ -3,10 +3,13 @@ use std::{borrow::Cow, collections::VecDeque};
 use crate::fl;
 use cosmic::{app::Task, iced, prelude::*, widget};
 use lazy_static::lazy_static;
-use monitord::system::disk::DiskStatic;
+use monitord::system::disk::{DiskDynamic, DiskStatic};
 
 lazy_static! {
+    static ref NOT_LOADED: Cow<'static, str> = fl!("not-loaded").into();
     static ref DISK_STATS: Cow<'static, str> = fl!("disk-stats").into();
+    static ref DISK_READ: Cow<'static, str> = fl!("disk-read").into();
+    static ref DISK_WRITE: Cow<'static, str> = fl!("disk-write").into();
     static ref DISK_DEV: Cow<'static, str> = fl!("disk-dev").into();
     static ref DISK_CAP: Cow<'static, str> = fl!("disk-cap").into();
 }
@@ -16,22 +19,39 @@ use crate::{
     config::Config,
 };
 
+use super::ResourceMessage;
+
+#[derive(PartialEq, Eq)]
+enum ShowGraph {
+    Write,
+    Read,
+}
+
 pub struct DiskPage {
-    disk_info: Option<Vec<DiskStatic>>,
+    tab: widget::segmented_button::SingleSelectModel,
+    disk_info: Option<(Vec<DiskStatic>, DiskDynamic)>,
 
     config: Config,
 
-    read_history: VecDeque<f32>,
-    write_history: VecDeque<f32>,
+    read_history: VecDeque<u64>,
+    max_read: u64,
+    write_history: VecDeque<u64>,
+    max_write: u64,
 }
 
 impl DiskPage {
     pub fn new(config: Config) -> Self {
         Self {
+            tab: widget::segmented_button::ModelBuilder::default()
+                .insert(|b| b.text(DISK_READ.clone()).data(ShowGraph::Read).activate())
+                .insert(|b| b.text(DISK_WRITE.clone()).data(ShowGraph::Write))
+                .build(),
             disk_info: None,
             config,
-            read_history: vec![0.0; 30].into(),
-            write_history: vec![0.0; 30].into(),
+            read_history: vec![0; 30].into(),
+            max_read: 1,
+            write_history: vec![0; 30].into(),
+            max_write: 1,
         }
     }
 }
@@ -40,15 +60,19 @@ impl Page for DiskPage {
     fn update(&mut self, msg: Message) -> Task<Message> {
         match msg {
             Message::Snapshot(snapshot) => {
-                self.disk_info = Some(
-                    snapshot
-                        .disk
-                        .iter()
-                        .map(|(disk_static, _)| disk_static.clone())
-                        .collect::<Vec<DiskStatic>>(),
-                )
+                self.max_read = self.max_read.max(snapshot.disk.1.read);
+                self.read_history.push_back(snapshot.disk.1.read);
+                self.read_history.pop_front();
+                self.max_write = self.max_write.max(snapshot.disk.1.write);
+                self.write_history.push_back(snapshot.disk.1.write);
+                self.write_history.pop_front();
+                self.disk_info = Some(snapshot.disk.clone())
             }
             Message::UpdateConfig(config) => self.config = config,
+            Message::ResourcePageMessage(rmsg) => match rmsg {
+                ResourceMessage::SelectDiskTab(entity) => self.tab.activate(entity),
+                _ => {}
+            },
             _ => {}
         }
         Task::none()
@@ -62,35 +86,91 @@ impl Page for DiskPage {
                 .spacing(cosmic.space_xs())
                 .push(
                     widget::column()
+                        .spacing(cosmic.space_s())
                         .push(
-                            widget::canvas(crate::widget::graph::LineGraph {
-                                points: self.read_history.iter().cloned().collect::<Vec<f32>>(),
-                            })
-                            .width(size.width.min(size.height * 1.2))
-                            .height(size.height.min(size.width * 1.2))
-                            .apply(widget::container)
-                            .width(iced::Length::Fill),
+                            widget::tab_bar::horizontal(&self.tab).on_activate(|entity| {
+                                Message::ResourcePageMessage(ResourceMessage::SelectDiskTab(entity))
+                            }),
                         )
                         .push(
                             widget::canvas(crate::widget::graph::LineGraph {
-                                points: self.write_history.iter().cloned().collect::<Vec<f32>>(),
+                                points: if *self.tab.active_data::<ShowGraph>().unwrap()
+                                    == ShowGraph::Read
+                                {
+                                    self.read_history
+                                        .iter()
+                                        .cloned()
+                                        .map(|read| {
+                                            (read as f64
+                                                / self
+                                                    .read_history
+                                                    .iter()
+                                                    .max()
+                                                    .cloned()
+                                                    .unwrap()
+                                                    .max(1)
+                                                    as f64)
+                                                as f32
+                                        })
+                                        .collect::<Vec<f32>>()
+                                } else {
+                                    self.write_history
+                                        .iter()
+                                        .cloned()
+                                        .map(|read| {
+                                            (read as f64
+                                                / self
+                                                    .write_history
+                                                    .iter()
+                                                    .max()
+                                                    .cloned()
+                                                    .unwrap()
+                                                    .max(1)
+                                                    as f64)
+                                                as f32
+                                        })
+                                        .collect::<Vec<f32>>()
+                                },
                             })
-                            .width(size.width.min(size.height * 1.2))
-                            .height(size.height.min(size.width * 1.2))
-                            .apply(widget::container)
-                            .width(iced::Length::Fill),
+                            .width(iced::Length::Fill)
+                            .height(size.width.min(size.height))
+                            .apply(widget::container),
                         ),
                 )
                 .push(
                     widget::settings::view_column(vec![widget::settings::section()
                         .title(DISK_STATS.clone())
-                        .add("TODO".apply(widget::text::heading))
+                        .add(widget::settings::item(
+                            DISK_READ.clone(),
+                            self.disk_info
+                                .as_ref()
+                                .map(|(_, disk_stats)| {
+                                    disk_stats
+                                        .read
+                                        .apply(crate::helpers::get_bytes)
+                                        .apply(widget::text::body)
+                                })
+                                .unwrap_or(widget::text::body(NOT_LOADED.clone())),
+                        ))
+                        .add(widget::settings::item(
+                            DISK_WRITE.clone(),
+                            self.disk_info
+                                .as_ref()
+                                .map(|(_, disk_stats)| {
+                                    disk_stats
+                                        .write
+                                        .apply(crate::helpers::get_bytes)
+                                        .apply(widget::text::body)
+                                })
+                                .unwrap_or(widget::text::body(NOT_LOADED.clone())),
+                        ))
                         .apply(Element::from)])
                     .extend(
                         self.disk_info
                             .as_ref()
                             .map(|disk_info| {
                                 disk_info
+                                    .0
                                     .iter()
                                     .map(|disk| {
                                         widget::settings::section()

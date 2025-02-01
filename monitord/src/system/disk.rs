@@ -67,3 +67,18 @@ impl DiskStatic {
         disks
     }
 }
+
+#[derive(zbus::zvariant::Type, serde::Serialize, serde::Deserialize, Debug, Clone)]
+pub struct DiskDynamic {
+    pub read: u64,
+    pub write: u64,
+}
+
+impl DiskDynamic {
+    pub(crate) async fn load(disks: &sysinfo::Disks) -> Self {
+        Self {
+            read: disks.iter().map(|disk| disk.usage().read_bytes).sum(),
+            write: disks.iter().map(|disk| disk.usage().written_bytes).sum(),
+        }
+    }
+}

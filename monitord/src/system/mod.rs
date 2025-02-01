@@ -3,6 +3,7 @@ pub use cpu::CpuDynamic;
 pub use cpu::CpuStatic;
 
 pub mod memory;
+use disk::DiskDynamic;
 use disk::DiskStatic;
 use memory::MemoryDynamic;
 use memory::MemoryStatic;
@@ -17,7 +18,7 @@ pub struct SystemSnapshot {
     pub processes: Vec<Process>,
     pub cpu: (CpuStatic, CpuDynamic),
     pub mem: (MemoryStatic, MemoryDynamic),
-    pub disk: Vec<(DiskStatic, u8)>,
+    pub disk: (Vec<DiskStatic>, DiskDynamic),
 }
 
 #[zbus::proxy(
@@ -38,6 +39,7 @@ pub trait SystemSnapshot {
 #[allow(unused)]
 pub(crate) struct SystemSnapshotServer {
     system: sysinfo::System,
+    disks: sysinfo::Disks,
 
     cpu_static: CpuStatic,
     mem_static: MemoryStatic,
@@ -52,6 +54,7 @@ impl SystemSnapshotServer {
 
         let server = Self {
             system: sysinfo::System::new_all(),
+            disks: sysinfo::Disks::new_with_refreshed_list(),
             cpu_static,
             mem_static,
             disk_static,
@@ -82,25 +85,41 @@ impl SystemSnapshotServer {
     }
 
     pub(crate) async fn load(&mut self) -> zbus::Result<SystemSnapshot> {
+        self.disks.refresh(true);
+        self.system.refresh_specifics(
+            sysinfo::RefreshKind::nothing()
+                .with_cpu(
+                    sysinfo::CpuRefreshKind::nothing()
+                        .with_cpu_usage()
+                        .with_frequency(),
+                )
+                .with_memory(sysinfo::MemoryRefreshKind::nothing().with_ram().with_swap())
+                .with_processes(
+                    sysinfo::ProcessRefreshKind::nothing()
+                        .with_cpu()
+                        .with_memory()
+                        .with_cmd(sysinfo::UpdateKind::OnlyIfNotSet)
+                        .with_exe(sysinfo::UpdateKind::OnlyIfNotSet),
+                ),
+        );
         self.system.refresh_cpu_all();
         self.system.refresh_memory();
         self.system
             .refresh_processes(sysinfo::ProcessesToUpdate::All, true);
-        let (processes, cpu_dynamic_info, mem_dynamic_info) = tokio::join!(
+        let (processes, cpu_dynamic_info, mem_dynamic_info, disk_dynamic_info) = tokio::join!(
             Process::load_all(&self.system),
             CpuDynamic::load(&self.system),
             MemoryDynamic::load(&self.system),
+            DiskDynamic::load(&self.disks),
         );
         Ok(SystemSnapshot {
             processes,
             cpu: (self.cpu_static.clone(), cpu_dynamic_info),
             mem: (self.mem_static.clone(), mem_dynamic_info),
-            disk: self
-                .disk_static
-                .iter()
-                .cloned()
-                .zip(vec![0u8].into_iter())
-                .collect::<Vec<(DiskStatic, u8)>>(),
+            disk: (
+                self.disk_static.iter().cloned().collect(),
+                disk_dynamic_info,
+            ),
         })
     }
 }

@@ -69,10 +69,7 @@ impl Page for DiskPage {
                 self.disk_info = Some(snapshot.disk.clone())
             }
             Message::UpdateConfig(config) => self.config = config,
-            Message::ResourcePageMessage(rmsg) => match rmsg {
-                ResourceMessage::SelectDiskTab(entity) => self.tab.activate(entity),
-                _ => {}
-            },
+            Message::ResourcePage(ResourceMessage::SelectDiskTab(entity)) => self.tab.activate(entity),
             _ => {}
         }
         Task::none()
@@ -89,7 +86,7 @@ impl Page for DiskPage {
                         .spacing(cosmic.space_s())
                         .push(
                             widget::tab_bar::horizontal(&self.tab).on_activate(|entity| {
-                                Message::ResourcePageMessage(ResourceMessage::SelectDiskTab(entity))
+                                Message::ResourcePage(ResourceMessage::SelectDiskTab(entity))
                             }),
                         )
                         .push(
@@ -189,7 +186,7 @@ impl Page for DiskPage {
                                     })
                                     .collect::<Vec<Element<Message>>>()
                             })
-                            .unwrap_or(vec![]),
+                            .unwrap_or_default(),
                     ),
                 )
                 .apply(Element::from)

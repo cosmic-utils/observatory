@@ -49,8 +49,8 @@ pub enum Message {
 
     Snapshot(Arc<monitord::system::SystemSnapshot>),
 
-    ProcessPageMessage(page::processes::ProcessMessage),
-    ResourcePageMessage(page::resources::ResourceMessage),
+    ProcessPage(page::processes::ProcessMessage),
+    ResourcePage(page::resources::ResourceMessage),
 }
 
 /// Create a COSMIC application from the app model

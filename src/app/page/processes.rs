@@ -95,16 +95,17 @@ impl super::Page for ProcessPage {
                         self.process_model.sort(category, false)
                     }
                 }
-                ProcessMessage::KillProcess(pid) => match self.interface.clone() {
-                    Some(interface) => tasks.push(Task::future(async move {
-                        interface
-                            .kill_process(pid)
-                            .await
-                            .expect("Failed to term process!");
-                        cosmic::app::message::app(Message::NoOp)
-                    })),
-                    None => {}
-                },
+                ProcessMessage::KillProcess(pid) => {
+                    if let Some(interface) = self.interface.clone() {
+                        tasks.push(Task::future(async move {
+                            interface
+                                .kill_process(pid)
+                                .await
+                                .expect("Failed to term process!");
+                            cosmic::app::message::app(Message::NoOp)
+                        }))
+                    }
+                }
                 ProcessMessage::TermProcess(pid) => match self.interface.clone() {
                     Some(interface) => tasks.push(Task::future(async move {
                         interface
@@ -116,10 +117,8 @@ impl super::Page for ProcessPage {
                     None => {}
                 },
             },
-            Message::ToggleContextPage(page) => {
-                if let ContextPage::PageAbout = page {
-                    self.show_info = true;
-                }
+            Message::ToggleContextPage(ContextPage::PageAbout) => {
+                self.show_info = true;
             }
 
             _ => {}

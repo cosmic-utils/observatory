@@ -48,10 +48,7 @@ impl super::Page for ResourcePage {
     fn update(&mut self, msg: Message) -> Task<Message> {
         let mut tasks = Vec::new();
         match msg.clone() {
-            Message::ResourcePageMessage(rmsg) => match rmsg {
-                ResourceMessage::SelectTab(tab) => self.tabs.activate(tab),
-                _ => {}
-            },
+            Message::ResourcePage(ResourceMessage::SelectTab(tab)) => self.tabs.activate(tab),
             Message::UpdateConfig(config) => self.config = config,
             _ => {}
         }
@@ -78,7 +75,7 @@ impl super::Page for ResourcePage {
             .push(
                 widget::tab_bar::horizontal(&self.tabs)
                     .on_activate(|entity| {
-                        Message::ResourcePageMessage(ResourceMessage::SelectTab(entity))
+                        Message::ResourcePage(ResourceMessage::SelectTab(entity))
                     })
                     .button_spacing(cosmic.space_xxs()),
             )

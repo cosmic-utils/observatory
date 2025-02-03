@@ -82,7 +82,7 @@ impl super::Page for ProcessPage {
                     self.process_model.sort(ProcessTableCategory::Name, false)
                 }
             }
-            Message::ProcessPageMessage(msg) => match msg {
+            Message::ProcessPage(msg) => match msg {
                 ProcessMessage::SelectProcess(process) => self.process_model.activate(process),
                 ProcessMessage::SortCategory(category) => {
                     if let Some(sort) = self.process_model.get_sort() {
@@ -106,16 +106,13 @@ impl super::Page for ProcessPage {
                         }))
                     }
                 }
-                ProcessMessage::TermProcess(pid) => match self.interface.clone() {
-                    Some(interface) => tasks.push(Task::future(async move {
-                        interface
-                            .term_process(pid)
-                            .await
-                            .expect("Failed to term process!");
-                        cosmic::app::message::app(Message::NoOp)
-                    })),
-                    None => {}
-                },
+                ProcessMessage::TermProcess(pid) => if let Some(interface) = self.interface.clone() { tasks.push(Task::future(async move {
+                    interface
+                        .term_process(pid)
+                        .await
+                        .expect("Failed to term process!");
+                    cosmic::app::message::app(Message::NoOp)
+                })) },
             },
             Message::ToggleContextPage(ContextPage::PageAbout) => {
                 self.show_info = true;
@@ -130,10 +127,10 @@ impl super::Page for ProcessPage {
     fn view(&self) -> Element<Message> {
         widget::table(&self.process_model)
             .on_item_left_click(|entity| {
-                Message::ProcessPageMessage(ProcessMessage::SelectProcess(entity))
+                Message::ProcessPage(ProcessMessage::SelectProcess(entity))
             })
             .on_category_left_click(|cat| {
-                Message::ProcessPageMessage(ProcessMessage::SortCategory(cat))
+                Message::ProcessPage(ProcessMessage::SortCategory(cat))
             })
             .apply(widget::scrollable)
             .id(widget::Id::new("PROCESS_SCROLLABLE"))
@@ -160,7 +157,7 @@ impl super::Page for ProcessPage {
                 )
                 .push(
                     fl!("kill").apply(widget::button::destructive).on_press(
-                        Message::ProcessPageMessage(ProcessMessage::KillProcess(
+                        Message::ProcessPage(ProcessMessage::KillProcess(
                             self.process_model
                                 .item(self.process_model.active())
                                 .unwrap()
@@ -171,7 +168,7 @@ impl super::Page for ProcessPage {
                 )
                 .push(
                     fl!("term").apply(widget::button::suggested).on_press(
-                        Message::ProcessPageMessage(ProcessMessage::TermProcess(
+                        Message::ProcessPage(ProcessMessage::TermProcess(
                             self.process_model
                                 .item(self.process_model.active())
                                 .unwrap()
@@ -201,7 +198,7 @@ impl super::Page for ProcessPage {
                     ))
                     .add(widget::settings::item(
                         fl!("cmd-line"),
-                        widget::text::caption(format!("{}", process.cmd.join(" "))),
+                        widget::text::caption(process.cmd.join(" ").to_string()),
                     ))
                     .add(widget::settings::item(
                         fl!("exe"),

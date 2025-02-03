@@ -57,7 +57,7 @@ impl Program<crate::app::Message, Theme> for LineGraph {
 
         let mut builder = path::Builder::new();
         let mut current_pos = bounds.position() + iced::Vector::new(0.0, bounds.height);
-        builder.move_to(current_pos.clone());
+        builder.move_to(current_pos);
         for (index, point) in self.points.iter().enumerate() {
             let x = index as f32 * x_step;
             let y = (bounds.y + bounds.height) - point * bounds.height;

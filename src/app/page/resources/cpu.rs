@@ -195,7 +195,7 @@ impl super::super::Page for CpuPage {
                                                 })
                                                 .collect::<Vec<Element<Message>>>()
                                         })
-                                        .unwrap_or(vec![]),
+                                        .unwrap_or_default(),
                                 ),
                             ))
                             .apply(Element::from),

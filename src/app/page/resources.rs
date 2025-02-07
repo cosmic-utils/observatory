@@ -1,6 +1,10 @@
 mod cpu;
+mod device;
 mod disk;
+mod gpu;
 mod mem;
+
+use device::DeviceResource;
 
 use crate::{app::Message, config::Config, fl};
 use cosmic::{app::Task, prelude::*, widget};
@@ -8,7 +12,7 @@ use cosmic::{app::Task, prelude::*, widget};
 #[derive(Debug, Clone)]
 pub enum ResourceMessage {
     SelectTab(widget::segmented_button::Entity),
-    SelectDiskTab(widget::segmented_button::Entity),
+    SelectDeviceTab(widget::segmented_button::Entity),
 }
 
 pub struct ResourcePage {
@@ -32,6 +36,11 @@ impl ResourcePage {
                             .icon(widget::icon::from_name("firmware-manager-symbolic"))
                             .data(Box::new(mem::MemoryPage::new(config.clone()))
                                 as Box<dyn super::Page>)
+                })
+                .insert(|b| {
+                    b.text("GPU")
+                        .icon(widget::icon::from_name("firmware-manager-symbolic"))
+                        .data(Box::new(gpu::GpuPage::new(config.clone())) as Box<dyn super::Page>)
                 })
                 .insert(|b| {
                     b.text(fl!("disk"))
@@ -74,9 +83,7 @@ impl super::Page for ResourcePage {
             .spacing(cosmic.space_s())
             .push(
                 widget::tab_bar::horizontal(&self.tabs)
-                    .on_activate(|entity| {
-                        Message::ResourcePage(ResourceMessage::SelectTab(entity))
-                    })
+                    .on_activate(|entity| Message::ResourcePage(ResourceMessage::SelectTab(entity)))
                     .button_spacing(cosmic.space_xxs()),
             )
             .push(

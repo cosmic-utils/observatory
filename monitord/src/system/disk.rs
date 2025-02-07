@@ -76,10 +76,18 @@ pub struct DiskDynamic {
 }
 
 impl DiskDynamic {
-    pub(crate) async fn load(disks: &sysinfo::Disks) -> Self {
-        Self {
-            read: disks.iter().map(|disk| disk.usage().read_bytes).sum(),
-            write: disks.iter().map(|disk| disk.usage().written_bytes).sum(),
-        }
+    pub(crate) async fn load(disks: &sysinfo::Disks) -> Vec<(String, Self)> {
+        disks
+            .iter()
+            .map(|disk| {
+                (
+                    disk.name().to_string_lossy().into_owned(),
+                    Self {
+                        read: disk.usage().read_bytes,
+                        write: disk.usage().written_bytes,
+                    },
+                )
+            })
+            .collect()
     }
 }

@@ -34,6 +34,7 @@ swp-cap = Swap Capacity
 disk-stats = Statistics
 disk-read = Read Bytes
 disk-write = Written Bytes
+disk-model = Model
 disk-dev = Device
 disk-cap = Capacity
 

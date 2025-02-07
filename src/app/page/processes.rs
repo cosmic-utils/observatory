@@ -106,13 +106,17 @@ impl super::Page for ProcessPage {
                         }))
                     }
                 }
-                ProcessMessage::TermProcess(pid) => if let Some(interface) = self.interface.clone() { tasks.push(Task::future(async move {
-                    interface
-                        .term_process(pid)
-                        .await
-                        .expect("Failed to term process!");
-                    cosmic::app::message::app(Message::NoOp)
-                })) },
+                ProcessMessage::TermProcess(pid) => {
+                    if let Some(interface) = self.interface.clone() {
+                        tasks.push(Task::future(async move {
+                            interface
+                                .term_process(pid)
+                                .await
+                                .expect("Failed to term process!");
+                            cosmic::app::message::app(Message::NoOp)
+                        }))
+                    }
+                }
             },
             Message::ToggleContextPage(ContextPage::PageAbout) => {
                 self.show_info = true;
@@ -129,9 +133,7 @@ impl super::Page for ProcessPage {
             .on_item_left_click(|entity| {
                 Message::ProcessPage(ProcessMessage::SelectProcess(entity))
             })
-            .on_category_left_click(|cat| {
-                Message::ProcessPage(ProcessMessage::SortCategory(cat))
-            })
+            .on_category_left_click(|cat| Message::ProcessPage(ProcessMessage::SortCategory(cat)))
             .apply(widget::scrollable)
             .id(widget::Id::new("PROCESS_SCROLLABLE"))
             .height(Length::Fill)
@@ -156,26 +158,26 @@ impl super::Page for ProcessPage {
                         .on_press(Message::ToggleContextPage(ContextPage::PageAbout)),
                 )
                 .push(
-                    fl!("kill").apply(widget::button::destructive).on_press(
-                        Message::ProcessPage(ProcessMessage::KillProcess(
+                    fl!("kill")
+                        .apply(widget::button::destructive)
+                        .on_press(Message::ProcessPage(ProcessMessage::KillProcess(
                             self.process_model
                                 .item(self.process_model.active())
                                 .unwrap()
                                 .process
                                 .pid,
-                        )),
-                    ),
+                        ))),
                 )
                 .push(
-                    fl!("term").apply(widget::button::suggested).on_press(
-                        Message::ProcessPage(ProcessMessage::TermProcess(
+                    fl!("term")
+                        .apply(widget::button::suggested)
+                        .on_press(Message::ProcessPage(ProcessMessage::TermProcess(
                             self.process_model
                                 .item(self.process_model.active())
                                 .unwrap()
                                 .process
                                 .pid,
-                        )),
-                    ),
+                        ))),
                 )
                 .apply(widget::layer_container)
                 .layer(cosmic::cosmic_theme::Layer::Primary)

@@ -1,5 +1,6 @@
 use cosmic::{iced, prelude::*, widget::canvas::*};
 
+#[derive(Clone)]
 pub struct LineGraph {
     // Points (out of 1)
     pub points: Vec<f32>,

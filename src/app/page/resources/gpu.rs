@@ -6,7 +6,15 @@ use cosmic::{app::Task, prelude::*, widget};
 use lazy_static::lazy_static;
 
 lazy_static! {
+    static ref NOT_SUPPORTED: Cow<'static, str> = fl!("not-supported").into();
     static ref GPU: Cow<'static, str> = fl!("gpu").into();
+    static ref GPU_MODEL: Cow<'static, str> = fl!("gpu-model").into();
+    static ref GPU_DRIVER: Cow<'static, str> = fl!("gpu-driver").into();
+    static ref GPU_VRAM: Cow<'static, str> = fl!("gpu-vram").into();
+    static ref GPU_USAGE: Cow<'static, str> = fl!("gpu-usage").into();
+    static ref GPU_ENCODE: Cow<'static, str> = fl!("gpu-encode").into();
+    static ref GPU_DECODE: Cow<'static, str> = fl!("gpu-decode").into();
+    static ref GPU_VRAM_USAGE: Cow<'static, str> = fl!("gpu-vram-usage").into();
 }
 
 pub struct GpuPage {
@@ -36,27 +44,27 @@ impl super::super::Page for GpuPage {
                             let mut device =
                                 super::DeviceResource::new(format!("{} {}", GPU.clone(), index));
                             device.add_graph(
-                                "GPU Usage",
+                                GPU_USAGE.clone(),
                                 crate::widget::graph::LineGraph {
                                     points: vec![0.0; 30],
                                 },
                             );
                             device.add_graph(
-                                "Encode",
+                                GPU_ENCODE.clone(),
                                 crate::widget::graph::LineGraph {
                                     points: vec![0.0; 30],
                                 },
                             );
                             device.add_graph(
-                                "Decode",
+                                GPU_DECODE.clone(),
                                 crate::widget::graph::LineGraph {
                                     points: vec![0.0; 30],
                                 },
                             );
                             device.activate_graph(0);
-                            device.add_info("Model", gpu.0.name.clone());
-                            device.add_info("Driver Version", gpu.0.driver.clone());
-                            device.add_info("Video Memory", get_bytes(gpu.0.video_memory));
+                            device.add_info(GPU_MODEL.clone(), gpu.0.name.clone());
+                            device.add_info(GPU_DRIVER.clone(), gpu.0.driver.clone());
+                            device.add_info(GPU_VRAM.clone(), get_bytes(gpu.0.video_memory));
 
                             device.apply_mut(|device| {
                                 if index != 0 {
@@ -72,27 +80,27 @@ impl super::super::Page for GpuPage {
                         }));
                 }
                 for (gpu, device) in snapshot.gpus.iter().zip(self.devices.iter_mut()) {
-                    device.set_statistic("Usage", format!("{}%", gpu.1.usage.round()));
+                    device.set_statistic(GPU_USAGE.clone(), format!("{}%", gpu.1.usage.round()));
                     device.set_statistic(
-                        "Encode",
+                        GPU_ENCODE.clone(),
                         if gpu.1.enc == -1.0 {
-                            "Not Supported".to_owned()
+                            NOT_SUPPORTED.clone()
                         } else {
-                            format!("{}%", gpu.1.enc.round())
+                            format!("{}%", gpu.1.enc.round()).into()
                         },
                     );
                     device.set_statistic(
-                        "Decode",
+                        GPU_DECODE.clone(),
                         if gpu.1.dec == -1.0 {
-                            "Not Supported".to_owned()
+                            NOT_SUPPORTED.clone()
                         } else {
-                            format!("{}%", gpu.1.dec.round())
+                            format!("{}%", gpu.1.dec.round()).into()
                         },
                     );
-                    device.set_statistic("Memory Usage", get_bytes(gpu.1.video_mem));
-                    device.push_graph("GPU Usage", gpu.1.usage / 100.0);
-                    device.push_graph("Encode", gpu.1.enc / 100.0);
-                    device.push_graph("Decode", gpu.1.dec / 100.0);
+                    device.set_statistic(GPU_VRAM_USAGE.clone(), get_bytes(gpu.1.video_mem));
+                    device.push_graph(GPU_USAGE.clone(), gpu.1.usage / 100.0);
+                    device.push_graph(GPU_ENCODE.clone(), gpu.1.enc / 100.0);
+                    device.push_graph(GPU_DECODE.clone(), gpu.1.dec / 100.0);
                 }
             }
             Message::ResourcePage(ResourceMessage::SelectDeviceTab(tab)) => {

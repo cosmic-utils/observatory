@@ -22,7 +22,7 @@ pub struct MemoryPage {
 
 impl MemoryPage {
     pub fn new(config: Config) -> Self {
-        let mut device = super::DeviceResource::new();
+        let mut device = super::DeviceResource::new("");
         device.add_graph(
             MEM_USAGE.clone().into_owned(),
             crate::widget::graph::LineGraph {

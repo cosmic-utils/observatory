@@ -13,6 +13,10 @@ use cosmic::{app::Task, prelude::*, widget};
 pub enum ResourceMessage {
     SelectTab(widget::segmented_button::Entity),
     SelectDeviceTab(widget::segmented_button::Entity),
+    DiskNext,
+    DiskPrev,
+    GpuNext,
+    GpuPrev,
 }
 
 pub struct ResourcePage {

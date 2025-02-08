@@ -73,8 +73,22 @@ impl super::super::Page for GpuPage {
                 }
                 for (gpu, device) in snapshot.gpus.iter().zip(self.devices.iter_mut()) {
                     device.set_statistic("Usage", format!("{}%", gpu.1.usage.round()));
-                    device.set_statistic("Encode", format!("{}%", gpu.1.enc.round()));
-                    device.set_statistic("Decode", format!("{}%", gpu.1.dec.round()));
+                    device.set_statistic(
+                        "Encode",
+                        if gpu.1.enc == -1.0 {
+                            "Not Supported".to_owned()
+                        } else {
+                            format!("{}%", gpu.1.enc.round())
+                        },
+                    );
+                    device.set_statistic(
+                        "Decode",
+                        if gpu.1.dec == -1.0 {
+                            "Not Supported".to_owned()
+                        } else {
+                            format!("{}%", gpu.1.dec.round())
+                        },
+                    );
                     device.set_statistic("Memory Usage", get_bytes(gpu.1.video_mem));
                     device.push_graph("GPU Usage", gpu.1.usage / 100.0);
                     device.push_graph("Encode", gpu.1.enc / 100.0);

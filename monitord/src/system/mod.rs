@@ -63,9 +63,21 @@ impl SystemSnapshotServer {
             async {
                 let mut backends = Vec::new();
                 match gpu::nvidia::Nvidia::init() {
-                    Ok(nvidia) => backends.push(Arc::new(nvidia) as Arc<dyn gpu::GpuBackend>),
+                    Ok(nvidia) => {
+                        backends.push(Arc::new(nvidia) as Arc<dyn gpu::GpuBackend>);
+                        tracing::info!("Initialized NVML backend");
+                    }
                     Err(e) => tracing::error!("Error loading NVML: {}", e.to_string()),
                 }
+
+                match gpu::amd::Amd::init() {
+                    Ok(amd) => {
+                        backends.push(Arc::new(amd) as Arc<dyn gpu::GpuBackend>);
+                        tracing::info!("Initialized AMD backend");
+                    }
+                    Err(e) => tracing::error!("Error loading AMD sysfs: {}", e.to_string()),
+                }
+
                 backends
             }
         );

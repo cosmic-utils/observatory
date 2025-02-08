@@ -1,3 +1,4 @@
+pub(crate) mod amd;
 pub(crate) mod nvidia;
 
 #[derive(zbus::zvariant::Type, serde::Serialize, serde::Deserialize, Debug, Clone)]

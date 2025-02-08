@@ -78,7 +78,7 @@ install:
     install -Dm0664 {{policy-src}} {{policy-dst}}
     systemctl daemon-reload
     systemctl enable {{daemon}}
-    systemctl start {{daemon}}
+    systemctl restart {{daemon}}
     install -Dm0644 resources/app.desktop {{desktop-dst}}
     install -Dm0644 resources/app.metainfo.xml {{appdata-dst}}
 

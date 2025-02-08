@@ -4,6 +4,7 @@ about = About
 view = View
 git-description = Git commit {$hash} on {$date}
 not-loaded = Not Loaded
+not-supported = Not Supported
 cpu = CPU
 gpu = GPU
 mem = Memory
@@ -37,6 +38,14 @@ disk-write = Written Bytes
 disk-model = Model
 disk-dev = Device
 disk-cap = Capacity
+gpu-model = Model
+gpu-driver = Driver
+gpu-vram = Video Memory
+gpu-usage = GPU Usage
+gpu-encode = Encode
+gpu-decode = Decode
+gpu-vram-usage = Memory Usage
+
 
 # Processes
 processes = Processes

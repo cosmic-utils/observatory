@@ -28,7 +28,7 @@ pub struct CpuPage {
 
 impl CpuPage {
     pub fn new(config: Config) -> Self {
-        let mut device = super::DeviceResource::new();
+        let mut device = super::DeviceResource::new("");
         device.add_graph(
             CPU_USAGE.clone(),
             crate::widget::graph::LineGraph {
@@ -89,7 +89,7 @@ impl super::super::Page for CpuPage {
     }
 }
 
-fn format_cache(caches: &Vec<monitord::system::cpu::CpuCache>) -> Cow<'static, str> {
+fn format_cache(caches: &[monitord::system::cpu::CpuCache]) -> Cow<'static, str> {
     caches
         .iter()
         .map(|cache| {

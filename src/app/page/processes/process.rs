@@ -7,8 +7,8 @@ use std::borrow::Cow;
 lazy_static! {
     static ref PROC_NAME: String = fl!("name");
     static ref PROC_CPU: String = fl!("cpu");
-    static ref PROC_GPU0: String = fl!("gpu", num = 0);
-    static ref PROC_GPU1: String = fl!("gpu", num = 1);
+    static ref PROC_GPU0: String = format!("{} 0", fl!("gpu"));
+    static ref PROC_GPU1: String = format!("{} 1", fl!("gpu"));
     static ref PROC_MEM: String = fl!("mem");
     static ref PROC_DISK: String = fl!("disk");
 }

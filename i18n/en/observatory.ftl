@@ -5,7 +5,7 @@ view = View
 git-description = Git commit {$hash} on {$date}
 not-loaded = Not Loaded
 cpu = CPU
-gpu = GPU { $num }
+gpu = GPU
 mem = Memory
 disk = Disk
 

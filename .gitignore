@@ -1,6 +1,7 @@
 .cargo/
 *.pdb
 **/*.rs.bk
+.idea/
 debug/
 target/
 vendor/

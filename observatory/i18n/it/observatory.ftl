@@ -1,29 +1,49 @@
 app-title = Observatory
 appearance = Aspetto
 theme = Tema
-match-desktop = Uguale al desktop
+match-desktop = Predefinito di sistema
 light = Chiaro
 dark = Scuro
-about = About
+about = Informazioni
 settings = Impostazioni
 
 # Menu
-view = Vista
+view = Visualizza
 menu-settings = Impostazioni
-menu-about = About
+menu-about = Informazioni
+
+# Overview page
+overview-page = Panoramica
+resource-overview = Panoramica delle risorse
+applications = Applicazioni
 
 # Resources page
+resource-page = Risorse
+utilization = Utilizzo
+speed = Velocità
+capacity = capacità
+
 cpu = CPU
+core = Core
+processes = Processi
+threads = Thread
+handles = Handles
+multi-core-view = Vista multi core
+single-core-view = Vista single core
+
 memory = Memoria
+swap = Swap
+
+gpu = GPU
+vram = VRAM
+
 disk = Disco
-total-mem = Memoria totale
-total-swap = Swap totale
-mem-utilization = Utilizzo memoria
-swap-utilization = Utilizzo swap
 total-read = Totale lettura
 total-write = Totale scrittura
 read = Lettura
 write = Scrittura
-utilization = Utilizzo
-speed-avg = Velocita media
-core = Core
+
+
+# Processes Page
+process-page = Processi
+proc-info = Informazioni processo

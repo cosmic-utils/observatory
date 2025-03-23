@@ -1,0 +1,3 @@
+[submodule "monitord"]
+	path = monitord
+	url = https://github.com/Adam-Cosner/monitord.git

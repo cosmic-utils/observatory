@@ -1,8 +1,8 @@
-mod cpu;
+//mod cpu;
 mod device;
-mod disk;
-mod gpu;
-mod mem;
+//mod disk;
+//mod gpu;
+//mod mem;
 
 use device::DeviceResource;
 
@@ -32,24 +32,24 @@ impl ResourcePage {
                 .insert(|b| {
                     b.text(fl!("cpu"))
                         .icon(widget::icon::from_name("firmware-manager-symbolic"))
-                        .data(Box::new(cpu::CpuPage::new(config.clone())) as Box<dyn super::Page>)
+                        //                        .data(Box::new(cpu::CpuPage::new(config.clone())) as Box<dyn super::Page>)
                         .activate()
                 })
                 .insert(|b| {
                     b.text(fl!("mem"))
-                            .icon(widget::icon::from_name("firmware-manager-symbolic"))
-                            .data(Box::new(mem::MemoryPage::new(config.clone()))
-                                as Box<dyn super::Page>)
+                        .icon(widget::icon::from_name("firmware-manager-symbolic"))
+                    //                            .data(Box::new(mem::MemoryPage::new(config.clone()))
+                    //                                as Box<dyn super::Page>)
                 })
                 .insert(|b| {
                     b.text("GPU")
                         .icon(widget::icon::from_name("firmware-manager-symbolic"))
-                        .data(Box::new(gpu::GpuPage::new(config.clone())) as Box<dyn super::Page>)
+                    //.data(Box::new(gpu::GpuPage::new(config.clone())) as Box<dyn super::Page>)
                 })
                 .insert(|b| {
                     b.text(fl!("disk"))
                         .icon(widget::icon::from_name("drive-harddisk-system-symbolic"))
-                        .data(Box::new(disk::DiskPage::new(config.clone())) as Box<dyn super::Page>)
+                    //.data(Box::new(disk::DiskPage::new(config.clone())) as Box<dyn super::Page>)
                 })
                 .build(),
             config,
@@ -70,12 +70,9 @@ impl super::Page for ResourcePage {
             .iter()
             .collect::<Vec<widget::segmented_button::Entity>>()
         {
-            tasks.push(
-                self.tabs
-                    .data_mut::<Box<dyn super::Page>>(page)
-                    .unwrap()
-                    .update(msg.clone()),
-            );
+            if let Some(tab) = self.tabs.data_mut::<Box<dyn super::Page>>(page) {
+                tasks.push(tab.update(msg.clone()));
+            }
         }
         Task::batch(tasks)
     }

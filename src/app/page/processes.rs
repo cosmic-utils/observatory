@@ -1,9 +1,10 @@
 mod process;
+use futures_util::SinkExt;
 use process::{ProcessTableCategory, ProcessTableItem};
 
 use cosmic::{
     app::{context_drawer, Task},
-    iced::Length,
+    iced::{stream, Length, Subscription},
     prelude::*,
     widget,
 };
@@ -15,6 +16,7 @@ use crate::{
 };
 #[derive(Clone, Debug)]
 pub enum ProcessMessage {
+    ProcessList(monitord_protocols::monitord::ProcessList),
     SelectProcess(widget::table::Entity),
     SortCategory(ProcessTableCategory),
     KillProcess(u32),
@@ -26,8 +28,6 @@ pub struct ProcessPage {
     show_info: bool,
     // Configuration data that persists between application runs.
     config: Config,
-    // Interface
-    interface: Option<monitord::Interface<'static>>,
 }
 
 impl ProcessPage {
@@ -36,13 +36,12 @@ impl ProcessPage {
             process_model: widget::table::SingleSelectModel::new(vec![
                 ProcessTableCategory::Name,
                 ProcessTableCategory::Cpu,
-                ProcessTableCategory::Gpu(0),
+                ProcessTableCategory::Gpu,
                 ProcessTableCategory::Mem,
                 ProcessTableCategory::Disk,
             ]),
             show_info: false,
             config,
-            interface: None,
         }
     }
 }
@@ -52,37 +51,31 @@ impl super::Page for ProcessPage {
         let mut tasks = Vec::new();
         match msg {
             Message::UpdateConfig(config) => self.config = config,
-            Message::InterfaceLoaded(interface) => self.interface = Some(interface),
-            Message::Snapshot(snapshot) => {
-                let old_sort = self.process_model.get_sort();
-                let active_process = self
-                    .process_model
-                    .item(self.process_model.active())
-                    .map(|process| process.process.pid);
-                self.process_model.clear();
-                for process in snapshot.processes.iter().cloned().map(|mut process| {
-                    if !self.config.scale_by_core {
-                        process.cpu /= snapshot.cpu.0.logical_cores as f32;
-                    }
-                    process
-                }) {
-                    let pid = process.pid;
-                    let item = ProcessTableItem::new(process);
-                    self.process_model.insert(item).apply(|entity| {
-                        if let Some(active_pid) = active_process {
-                            if pid == active_pid {
-                                entity.activate();
-                            }
-                        }
-                    });
-                }
-                if let Some(sort) = old_sort {
-                    self.process_model.sort(sort.0, sort.1);
-                } else {
-                    self.process_model.sort(ProcessTableCategory::Name, false)
-                }
-            }
             Message::ProcessPage(msg) => match msg {
+                ProcessMessage::ProcessList(processes) => {
+                    let old_sort = self.process_model.get_sort();
+                    let active_process = self
+                        .process_model
+                        .item(self.process_model.active())
+                        .map(|process| process.process.pid);
+                    self.process_model.clear();
+                    for process in processes.processes.iter().cloned() {
+                        let pid = process.pid;
+                        let item = ProcessTableItem::new(process);
+                        self.process_model.insert(item).apply(|entity| {
+                            if let Some(active_pid) = active_process {
+                                if pid == active_pid {
+                                    entity.activate();
+                                }
+                            }
+                        });
+                    }
+                    if let Some(sort) = old_sort {
+                        self.process_model.sort(sort.0, sort.1);
+                    } else {
+                        self.process_model.sort(ProcessTableCategory::Name, false)
+                    }
+                }
                 ProcessMessage::SelectProcess(process) => self.process_model.activate(process),
                 ProcessMessage::SortCategory(category) => {
                     if let Some(sort) = self.process_model.get_sort() {
@@ -96,26 +89,10 @@ impl super::Page for ProcessPage {
                     }
                 }
                 ProcessMessage::KillProcess(pid) => {
-                    if let Some(interface) = self.interface.clone() {
-                        tasks.push(Task::future(async move {
-                            interface
-                                .kill_process(pid)
-                                .await
-                                .expect("Failed to term process!");
-                            cosmic::app::message::app(Message::NoOp)
-                        }))
-                    }
+                    todo!()
                 }
                 ProcessMessage::TermProcess(pid) => {
-                    if let Some(interface) = self.interface.clone() {
-                        tasks.push(Task::future(async move {
-                            interface
-                                .term_process(pid)
-                                .await
-                                .expect("Failed to term process!");
-                            cosmic::app::message::app(Message::NoOp)
-                        }))
-                    }
+                    todo!()
                 }
             },
             Message::ToggleContextPage(ContextPage::PageAbout) => {
@@ -200,15 +177,13 @@ impl super::Page for ProcessPage {
                     ))
                     .add(widget::settings::item(
                         fl!("cmd-line"),
-                        widget::text::caption(process.cmd.join(" ").to_string()),
-                    ))
-                    .add(widget::settings::item(
-                        fl!("exe"),
-                        widget::text::caption(process.exe.clone()),
+                        widget::text::caption(
+                            process.cmdline.clone().unwrap_or_default().to_string(),
+                        ),
                     ))
                     .add(widget::settings::item(
                         fl!("status"),
-                        widget::text::caption(process.status.clone()),
+                        widget::text::caption(process.state.clone()),
                     ))
                     .apply(Element::from),
                 Message::ToggleContextPage(ContextPage::PageAbout),
@@ -216,5 +191,43 @@ impl super::Page for ProcessPage {
         } else {
             None
         }
+    }
+
+    fn subscription(&self) -> Vec<Subscription<Message>> {
+        vec![Subscription::run(|| {
+            stream::channel(1, |mut sender| async move {
+                use monitord_protocols::protocols::MonitordServiceClient;
+                let mut client = MonitordServiceClient::connect("http://127.0.0.1:50051")
+                    .await
+                    .unwrap();
+
+                let request =
+                    tonic::Request::new(monitord_protocols::monitord::ProcessInfoRequest {
+                        interval_ms: 1000,
+                        username_filter: None,
+                        pid_filter: None,
+                        name_filter: None,
+                        sort_by_cpu: true,
+                        sort_by_memory: false,
+                        limit: 10000000,
+                    });
+
+                let mut response = client
+                    .stream_process_info(request)
+                    .await
+                    .unwrap()
+                    .into_inner();
+
+                loop {
+                    let message = response.message().await.unwrap();
+
+                    if let Some(item) = message {
+                        sender
+                            .send(Message::ProcessPage(ProcessMessage::ProcessList(item)))
+                            .await;
+                    }
+                }
+            })
+        })]
     }
 }

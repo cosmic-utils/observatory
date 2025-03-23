@@ -25,4 +25,8 @@ pub trait Page {
     fn context_drawer(&self) -> Option<cosmic::app::context_drawer::ContextDrawer<Message>> {
         None
     }
+
+    fn subscription(&self) -> Vec<cosmic::iced::Subscription<Message>> {
+        vec![]
+    }
 }

@@ -30,15 +30,12 @@ pub struct AppModel {
     key_binds: HashMap<menu::KeyBind, MenuAction>,
     // Configuration data that persists between application runs.
     config: Config,
-
-    interface: Option<monitord::Interface<'static>>,
 }
 
 /// Messages emitted by the application and its widgets.
 #[derive(Debug, Clone)]
 pub enum Message {
     NoOp,
-    InterfaceLoaded(monitord::Interface<'static>),
     OpenRepositoryUrl,
     ToggleContextPage(ContextPage),
     UpdateConfig(Config),
@@ -46,8 +43,6 @@ pub enum Message {
     // Settings
     SetScaleByCore(bool),
     SetMulticoreView(bool),
-
-    Snapshot(Arc<monitord::system::SystemSnapshot>),
 
     ProcessPage(page::processes::ProcessMessage),
     ResourcePage(page::resources::ResourceMessage),
@@ -96,7 +91,6 @@ impl Application for AppModel {
                     }
                 })
                 .unwrap_or_default(),
-            interface: None,
         };
         app.nav
             .insert()
@@ -206,28 +200,17 @@ impl Application for AppModel {
     /// emit messages to the application through a channel. They are started at the
     /// beginning of the application, and persist through its lifetime.
     fn subscription(&self) -> Subscription<Self::Message> {
-        Subscription::batch(vec![
-            Subscription::run(|| {
-                stream::channel(10, move |mut sender| async move {
-                    let interface = monitord::Interface::init()
-                        .await
-                        .expect("Could not initialize interface!");
-                    let mut snapshot_stream = interface.get_signal_iter().await.unwrap();
-                    sender
-                        .send(Message::InterfaceLoaded(interface))
-                        .await
-                        .expect("Could not send the monitor interface");
-                    loop {
-                        let signal = snapshot_stream.next().await.unwrap();
+        let mut subscriptions = Vec::new();
 
-                        sender
-                            .send(Message::Snapshot(Arc::new(signal.args().unwrap().instance)))
-                            .await
-                            .expect("Could not send the snapshot!");
-                    }
-                })
-            }),
-            // Watch for application configuration changes.
+        let entities = self.nav.iter().collect::<Vec<nav_bar::Id>>();
+        for entity in entities {
+            let page = self.nav.data::<Box<dyn Page>>(entity);
+            if let Some(page) = page {
+                subscriptions.push(Subscription::batch(page.subscription()));
+            }
+        }
+
+        subscriptions.push(
             self.core()
                 .watch_config::<Config>(Self::APP_ID)
                 .map(|update| {
@@ -237,7 +220,9 @@ impl Application for AppModel {
 
                     Message::UpdateConfig(update.config)
                 }),
-        ])
+        );
+
+        Subscription::batch(subscriptions)
     }
 
     /// Handles messages emitted by the application and its widgets.
@@ -272,8 +257,6 @@ impl Application for AppModel {
                     tracing::error!("failed to open {url:?}: {err}");
                 }
             },
-
-            Message::InterfaceLoaded(interface) => self.interface = Some(interface),
 
             Message::SetScaleByCore(state) => {
                 self.config

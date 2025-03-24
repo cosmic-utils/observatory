@@ -5,6 +5,24 @@ view = View
 git-description = Git commit {$hash} on {$date}
 not-loaded = Not Loaded
 not-supported = Not Supported
+
+
+# === Pages ===
+system = System
+processes = Processes
+
+# System page
+os-info = OS Information
+hostname = Host Name
+os-name = Operating System
+os-version = OS Version
+kernel-version = Kernel
+vendor = Vendor
+system-stats = System Statistics
+process-count = Running Processes
+thread-count = Total Threads
+open-files = Open File Descriptors
+
 cpu = CPU
 gpu = GPU
 mem = Memory

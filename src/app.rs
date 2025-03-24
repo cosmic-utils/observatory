@@ -41,6 +41,7 @@ pub enum Message {
     SetScaleByCore(bool),
     SetMulticoreView(bool),
 
+    SystemPage(page::system::SystemMessage),
     ProcessPage(page::processes::ProcessMessage),
     ResourcePage(page::resources::ResourceMessage),
 }
@@ -91,13 +92,18 @@ impl Application for AppModel {
         };
         app.nav
             .insert()
+            .text(fl!("system"))
+            .data(Box::new(page::system::SystemPage::new()) as Box<dyn page::Page>)
+            .icon(icon::from_name("preferences-desktop-symbolic"))
+            .activate();
+        app.nav
+            .insert()
             .text(fl!("processes"))
             .data(
                 Box::new(page::processes::ProcessPage::new(app.config.clone()))
                     as Box<dyn page::Page>,
             )
-            .icon(icon::from_name("utilities-terminal-symbolic"))
-            .activate();
+            .icon(icon::from_name("utilities-terminal-symbolic"));
         app.nav
             .insert()
             .text(fl!("resources"))

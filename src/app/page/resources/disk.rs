@@ -1,7 +1,13 @@
 use std::borrow::Cow;
 
 use crate::{fl, helpers::get_bytes};
-use cosmic::{app::Task, prelude::*, widget};
+use cosmic::{
+    app::Task,
+    iced::{stream, Subscription},
+    prelude::*,
+    widget,
+};
+use futures_util::SinkExt;
 use lazy_static::lazy_static;
 
 lazy_static! {
@@ -45,15 +51,15 @@ impl DiskPage {
 impl Page for DiskPage {
     fn update(&mut self, msg: Message) -> Task<Message> {
         match msg {
-            Message::Snapshot(snapshot) => {
-                for (index, disk) in snapshot.disks.iter().enumerate() {
+            Message::ResourcePage(ResourceMessage::DiskSnapshot(snapshot)) => {
+                for (index, disk) in snapshot.storages.iter().enumerate() {
                     if self
                         .devices
                         .iter()
                         .find(|device| {
                             device
                                 .get_info(DISK_MODEL.clone())
-                                .is_some_and(|model| model == disk.0.model)
+                                .is_some_and(|model| model == disk.model)
                         })
                         .is_none()
                     {
@@ -73,9 +79,9 @@ impl Page for DiskPage {
                         );
                         device.activate_graph(0);
 
-                        device.add_info(DISK_MODEL.clone(), disk.0.model.clone());
-                        device.add_info(DISK_DEV.clone(), disk.0.device.clone());
-                        device.add_info(DISK_CAP.clone(), get_bytes(disk.0.size));
+                        device.add_info(DISK_MODEL.clone(), disk.model.clone());
+                        device.add_info(DISK_DEV.clone(), disk.device_name.clone());
+                        device.add_info(DISK_CAP.clone(), get_bytes(disk.total_space_bytes));
 
                         device.apply_mut(|device| {
                             if index != 0 {
@@ -83,7 +89,7 @@ impl Page for DiskPage {
                             }
                         });
                         device.apply_mut(|device| {
-                            if index != snapshot.disks.len() - 1 {
+                            if index != snapshot.storages.len() - 1 {
                                 device.on_next(Message::ResourcePage(ResourceMessage::DiskNext));
                             }
                         });
@@ -95,17 +101,17 @@ impl Page for DiskPage {
                         .find(|device| {
                             device
                                 .get_info(DISK_MODEL.clone())
-                                .is_some_and(|model| model == disk.0.model)
+                                .is_some_and(|model| model == disk.model)
                         })
                         .expect("Disk not found!");
-                    device.set_statistic(DISK_READ.clone(), get_bytes(disk.1.read));
-                    device.set_statistic(DISK_WRITE.clone(), get_bytes(disk.1.write));
+                    device.set_statistic(DISK_READ.clone(), get_bytes(disk.read_bytes_per_sec));
+                    device.set_statistic(DISK_WRITE.clone(), get_bytes(disk.write_bytes_per_sec));
 
-                    device.push_graph(DISK_READ.clone(), disk.1.read as f32);
-                    device.push_graph(DISK_WRITE.clone(), disk.1.write as f32);
+                    device.push_graph(DISK_READ.clone(), disk.read_bytes_per_sec as f32);
+                    device.push_graph(DISK_WRITE.clone(), disk.write_bytes_per_sec as f32);
 
-                    self.max_read = self.max_read.max(disk.1.read);
-                    self.max_write = self.max_write.max(disk.1.write);
+                    self.max_read = self.max_read.max(disk.read_bytes_per_sec);
+                    self.max_write = self.max_write.max(disk.write_bytes_per_sec);
                     device.map_graph(DISK_READ.clone(), self.max_read as f32);
                     device.map_graph(DISK_WRITE.clone(), self.max_write as f32);
                 }
@@ -131,5 +137,37 @@ impl Page for DiskPage {
             .get(self.active)
             .map(|device| device.view())
             .unwrap_or(widget::horizontal_space().apply(Element::from))
+    }
+
+    fn subscription(&self) -> Vec<Subscription<Message>> {
+        vec![Subscription::run(|| {
+            stream::channel(1, |mut sender| async move {
+                use monitord_protocols::protocols::MonitordServiceClient;
+                let mut client = MonitordServiceClient::connect("http://127.0.0.1:50051")
+                    .await
+                    .unwrap();
+
+                let request = tonic::Request::new(monitord_protocols::monitord::SnapshotRequest {
+                    interval_ms: 1000,
+                });
+
+                let mut stream = client
+                    .stream_storage_info(request)
+                    .await
+                    .unwrap()
+                    .into_inner();
+
+                loop {
+                    let message = stream.message().await.unwrap();
+
+                    if let Some(item) = message {
+                        sender
+                            .send(Message::ResourcePage(ResourceMessage::DiskSnapshot(item)))
+                            .await
+                            .unwrap();
+                    }
+                }
+            })
+        })]
     }
 }

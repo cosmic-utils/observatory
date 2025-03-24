@@ -2,7 +2,13 @@ use std::borrow::Cow;
 
 use super::ResourceMessage;
 use crate::{app::Message, config::Config, fl, helpers::get_bytes};
-use cosmic::{app::Task, prelude::*, widget};
+use cosmic::{
+    app::Task,
+    iced::{stream, Subscription},
+    prelude::*,
+    widget,
+};
+use futures_util::SinkExt;
 use lazy_static::lazy_static;
 
 lazy_static! {
@@ -37,7 +43,7 @@ impl super::super::Page for GpuPage {
     fn update(&mut self, msg: Message) -> Task<Message> {
         match msg {
             Message::UpdateConfig(config) => self.config = config,
-            Message::Snapshot(snapshot) => {
+            Message::ResourcePage(ResourceMessage::GpuSnapshot(snapshot)) => {
                 if self.devices.is_empty() {
                     self.devices
                         .extend(snapshot.gpus.iter().enumerate().map(|(index, gpu)| {
@@ -62,9 +68,15 @@ impl super::super::Page for GpuPage {
                                 },
                             );
                             device.activate_graph(0);
-                            device.add_info(GPU_MODEL.clone(), gpu.0.name.clone());
-                            device.add_info(GPU_DRIVER.clone(), gpu.0.driver.clone());
-                            device.add_info(GPU_VRAM.clone(), get_bytes(gpu.0.video_memory));
+                            device.add_info(GPU_MODEL.clone(), gpu.name.clone());
+                            device.add_info(
+                                GPU_DRIVER.clone(),
+                                gpu.driver_info
+                                    .clone()
+                                    .map(|driv| driv.kernel_driver)
+                                    .unwrap_or_default(),
+                            );
+                            device.add_info(GPU_VRAM.clone(), get_bytes(gpu.vram_total_bytes));
 
                             device.apply_mut(|device| {
                                 if index != 0 {
@@ -80,27 +92,45 @@ impl super::super::Page for GpuPage {
                         }));
                 }
                 for (gpu, device) in snapshot.gpus.iter().zip(self.devices.iter_mut()) {
-                    device.set_statistic(GPU_USAGE.clone(), format!("{}%", gpu.1.usage.round()));
+                    device.set_statistic(
+                        GPU_USAGE.clone(),
+                        format!("{}%", gpu.core_utilization_percent.round()),
+                    );
                     device.set_statistic(
                         GPU_ENCODE.clone(),
-                        if gpu.1.enc == -1.0 {
-                            NOT_SUPPORTED.clone()
+                        if let Some(encoder_info) = gpu.encoder_info {
+                            format!("{}%", encoder_info.video_encode_utilization_percent).into()
                         } else {
-                            format!("{}%", gpu.1.enc.round()).into()
+                            NOT_SUPPORTED.clone()
                         },
                     );
                     device.set_statistic(
                         GPU_DECODE.clone(),
-                        if gpu.1.dec == -1.0 {
-                            NOT_SUPPORTED.clone()
+                        if let Some(encoder_info) = gpu.encoder_info {
+                            format!("{}%", encoder_info.video_decode_utilization_percent).into()
                         } else {
-                            format!("{}%", gpu.1.dec.round()).into()
+                            NOT_SUPPORTED.clone()
                         },
                     );
-                    device.set_statistic(GPU_VRAM_USAGE.clone(), get_bytes(gpu.1.video_mem));
-                    device.push_graph(GPU_USAGE.clone(), gpu.1.usage / 100.0);
-                    device.push_graph(GPU_ENCODE.clone(), gpu.1.enc / 100.0);
-                    device.push_graph(GPU_DECODE.clone(), gpu.1.dec / 100.0);
+                    device.set_statistic(GPU_VRAM_USAGE.clone(), get_bytes(gpu.vram_used_bytes));
+                    device.push_graph(
+                        GPU_USAGE.clone(),
+                        gpu.core_utilization_percent as f32 / 100.0,
+                    );
+                    device.push_graph(
+                        GPU_ENCODE.clone(),
+                        gpu.encoder_info
+                            .map(|enc| enc.video_encode_utilization_percent as f32)
+                            .unwrap_or_default()
+                            / 100.0,
+                    );
+                    device.push_graph(
+                        GPU_DECODE.clone(),
+                        gpu.encoder_info
+                            .map(|enc| enc.video_encode_utilization_percent as f32)
+                            .unwrap_or_default()
+                            / 100.0,
+                    );
                 }
             }
             Message::ResourcePage(ResourceMessage::SelectDeviceTab(tab)) => {
@@ -124,5 +154,33 @@ impl super::super::Page for GpuPage {
             .get(self.active)
             .map(|device| device.view())
             .unwrap_or(widget::horizontal_space().apply(Element::from))
+    }
+
+    fn subscription(&self) -> Vec<Subscription<Message>> {
+        vec![Subscription::run(|| {
+            stream::channel(1, |mut sender| async move {
+                use monitord_protocols::protocols::MonitordServiceClient;
+                let mut client = MonitordServiceClient::connect("http://127.0.0.1:50051")
+                    .await
+                    .unwrap();
+
+                let request = tonic::Request::new(monitord_protocols::monitord::SnapshotRequest {
+                    interval_ms: 1000,
+                });
+
+                let mut stream = client.stream_gpu_info(request).await.unwrap().into_inner();
+
+                loop {
+                    let message = stream.message().await.unwrap();
+
+                    if let Some(item) = message {
+                        sender
+                            .send(Message::ResourcePage(ResourceMessage::GpuSnapshot(item)))
+                            .await
+                            .unwrap();
+                    }
+                }
+            })
+        })]
     }
 }

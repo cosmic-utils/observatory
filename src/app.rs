@@ -5,15 +5,13 @@ use crate::config::Config;
 use crate::fl;
 use cosmic::app::{context_drawer, Core, Task};
 use cosmic::cosmic_config::{self, CosmicConfigEntry};
-use cosmic::iced::{stream, Alignment, Subscription};
+use cosmic::iced::{Alignment, Subscription};
 use cosmic::prelude::*;
 use cosmic::widget::segmented_button::Entity;
 use cosmic::widget::{self, icon, menu, nav_bar};
 use cosmic::{cosmic_theme, theme, Application};
-use futures_util::{SinkExt, StreamExt};
 use page::Page;
 use std::collections::HashMap;
-use std::sync::Arc;
 
 const REPOSITORY: &str = env!("CARGO_PKG_REPOSITORY");
 
@@ -35,7 +33,6 @@ pub struct AppModel {
 /// Messages emitted by the application and its widgets.
 #[derive(Debug, Clone)]
 pub enum Message {
-    NoOp,
     OpenRepositoryUrl,
     ToggleContextPage(ContextPage),
     UpdateConfig(Config),

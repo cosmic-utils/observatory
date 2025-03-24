@@ -48,7 +48,7 @@ impl ProcessPage {
 
 impl super::Page for ProcessPage {
     fn update(&mut self, msg: Message) -> Task<Message> {
-        let mut tasks = Vec::new();
+        let tasks = Vec::new();
         match msg {
             Message::UpdateConfig(config) => self.config = config,
             Message::ProcessPage(msg) => match msg {
@@ -88,10 +88,10 @@ impl super::Page for ProcessPage {
                         self.process_model.sort(category, false)
                     }
                 }
-                ProcessMessage::KillProcess(pid) => {
+                ProcessMessage::KillProcess(_pid) => {
                     todo!()
                 }
-                ProcessMessage::TermProcess(pid) => {
+                ProcessMessage::TermProcess(_pid) => {
                     todo!()
                 }
             },
@@ -224,7 +224,8 @@ impl super::Page for ProcessPage {
                     if let Some(item) = message {
                         sender
                             .send(Message::ProcessPage(ProcessMessage::ProcessList(item)))
-                            .await;
+                            .await
+                            .unwrap();
                     }
                 }
             })

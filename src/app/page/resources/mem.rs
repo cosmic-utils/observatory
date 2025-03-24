@@ -1,7 +1,12 @@
 use std::borrow::Cow;
 
 use crate::{app::Message, config::Config, fl, helpers::get_bytes};
-use cosmic::{app::Task, prelude::*};
+use cosmic::{
+    app::Task,
+    iced::{stream, Subscription},
+    prelude::*,
+};
+use futures_util::SinkExt;
 use lazy_static::lazy_static;
 
 use super::ResourceMessage;
@@ -37,23 +42,19 @@ impl MemoryPage {
 impl super::super::Page for MemoryPage {
     fn update(&mut self, msg: Message) -> Task<Message> {
         match msg {
-            Message::Snapshot(snapshot) => {
-                self.device.add_info(
-                    MEM_CAP.clone(),
-                    get_bytes(snapshot.mem.0.resident_capacity as u64),
-                );
-                self.device.add_info(
-                    SWP_CAP.clone(),
-                    get_bytes(snapshot.mem.0.swap_capacity as u64),
-                );
+            Message::ResourcePage(ResourceMessage::MemorySnapshot(snapshot)) => {
                 self.device
-                    .set_statistic(MEM_USAGE.clone(), get_bytes(snapshot.mem.1.resident as u64));
+                    .add_info(MEM_CAP.clone(), get_bytes(snapshot.total_memory_bytes));
                 self.device
-                    .set_statistic(SWP_USAGE.clone(), get_bytes(snapshot.mem.1.swap as u64));
+                    .add_info(SWP_CAP.clone(), get_bytes(snapshot.swap_total_bytes));
+                self.device
+                    .set_statistic(MEM_USAGE.clone(), get_bytes(snapshot.used_memory_bytes));
+                self.device
+                    .set_statistic(SWP_USAGE.clone(), get_bytes(snapshot.swap_used_bytes));
                 self.device.push_graph(
                     MEM_USAGE.clone(),
-                    ((snapshot.mem.1.resident + snapshot.mem.1.swap) as f64
-                        / (snapshot.mem.0.resident_capacity + snapshot.mem.0.swap_capacity) as f64)
+                    ((snapshot.used_memory_bytes + snapshot.swap_used_bytes) as f64
+                        / (snapshot.total_memory_bytes + snapshot.swap_total_bytes) as f64)
                         as f32,
                 );
             }
@@ -71,5 +72,37 @@ impl super::super::Page for MemoryPage {
 
     fn view(&self) -> Element<Message> {
         self.device.view()
+    }
+
+    fn subscription(&self) -> Vec<Subscription<Message>> {
+        vec![Subscription::run(|| {
+            stream::channel(1, |mut sender| async move {
+                use monitord_protocols::protocols::MonitordServiceClient;
+                let mut client = MonitordServiceClient::connect("http://127.0.0.1:50051")
+                    .await
+                    .unwrap();
+
+                let request = tonic::Request::new(monitord_protocols::monitord::SnapshotRequest {
+                    interval_ms: 1000,
+                });
+
+                let mut stream = client
+                    .stream_memory_info(request)
+                    .await
+                    .unwrap()
+                    .into_inner();
+
+                loop {
+                    let message = stream.message().await.unwrap();
+
+                    if let Some(item) = message {
+                        sender
+                            .send(Message::ResourcePage(ResourceMessage::MemorySnapshot(item)))
+                            .await
+                            .unwrap();
+                    }
+                }
+            })
+        })]
     }
 }

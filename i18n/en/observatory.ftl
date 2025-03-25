@@ -9,6 +9,7 @@ not-supported = Not Supported
 
 # === Pages ===
 system = System
+cpu = CPU
 processes = Processes
 
 # System page
@@ -22,6 +23,20 @@ system-stats = System Statistics
 process-count = Running Processes
 thread-count = Total Threads
 open-files = Open File Descriptors
+
+# CPU page
+processor-info = Processor Information
+model-name = Model Name
+physical-cores = Physical Cores
+logical-cores = Logical Cores
+l1-instruction-cache = L1 Instruction Cache
+l1-data-cache = L1 Data Cache
+l2-cache = L2 Cache
+l3-cache = L3 Cache
+architecture = Architecture
+processor-stats = Processor Stats
+frequency = Frequency
+global-utilization = Global Utilization
 
 cpu = CPU
 gpu = GPU

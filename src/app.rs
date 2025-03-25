@@ -42,8 +42,8 @@ pub enum Message {
     SetMulticoreView(bool),
 
     SystemPage(page::system::SystemMessage),
+    CpuPage(page::cpu::CpuMessage),
     ProcessPage(page::processes::ProcessMessage),
-    ResourcePage(page::resources::ResourceMessage),
 }
 
 /// Create a COSMIC application from the app model
@@ -98,20 +98,17 @@ impl Application for AppModel {
             .activate();
         app.nav
             .insert()
+            .text(fl!("cpu"))
+            .data(Box::new(page::cpu::CpuPage::new()) as Box<dyn page::Page>)
+            .icon(icon::from_name("firmware-manager-symbolic"));
+        app.nav
+            .insert()
             .text(fl!("processes"))
             .data(
                 Box::new(page::processes::ProcessPage::new(app.config.clone()))
                     as Box<dyn page::Page>,
             )
             .icon(icon::from_name("utilities-terminal-symbolic"));
-        app.nav
-            .insert()
-            .text(fl!("resources"))
-            .data(
-                Box::new(page::resources::ResourcePage::new(app.config.clone()))
-                    as Box<dyn page::Page>,
-            )
-            .icon(icon::from_name("utilities-system-monitor-symbolic"));
 
         // Create a startup command that sets the window title.
         let command = app.update_title();

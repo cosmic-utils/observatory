@@ -16,7 +16,7 @@ use monitord_protocols::{
     protocols::MonitordServiceClient,
 };
 
-/// Messages that are emitted that are relevant to the System page
+/// Messages that are emitted that are relevant to the CPU page
 #[derive(Debug, Clone)]
 pub enum CpuMessage {
     Snapshot(CpuInfo),
@@ -37,7 +37,7 @@ impl CpuPage {
 }
 
 impl super::Page for CpuPage {
-    fn update(&mut self, msg: crate::app::Message) -> cosmic::app::Task<crate::app::Message> {
+    fn update(&mut self, msg: Message) -> cosmic::app::Task<Message> {
         let tasks = Vec::new();
         match msg {
             Message::CpuPage(CpuMessage::Snapshot(snapshot)) => {

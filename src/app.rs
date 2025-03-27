@@ -43,6 +43,7 @@ pub enum Message {
 
     SystemPage(page::system::SystemMessage),
     CpuPage(page::cpu::CpuMessage),
+    MemoryPage(page::memory::MemoryMessage),
     ProcessPage(page::processes::ProcessMessage),
 }
 
@@ -100,6 +101,11 @@ impl Application for AppModel {
             .insert()
             .text(fl!("cpu"))
             .data(Box::new(page::cpu::CpuPage::new()) as Box<dyn page::Page>)
+            .icon(icon::from_name("firmware-manager-symbolic"));
+        app.nav
+            .insert()
+            .text(fl!("memory"))
+            .data(Box::new(page::memory::MemoryPage::new()) as Box<dyn page::Page>)
             .icon(icon::from_name("firmware-manager-symbolic"));
         app.nav
             .insert()

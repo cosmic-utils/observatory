@@ -62,54 +62,57 @@ impl super::Page for MemoryPage {
                     .width(iced::Length::Fill)
                     .height(iced::Length::Fill),
                 )
-                .push(widget::settings::view_column(vec![
-                    widget::settings::section()
-                        .title(fl!("memory-info"))
-                        .add(widget::settings::item(
-                            fl!("total-memory"),
-                            memory_info
-                                .total_memory_bytes
-                                .apply(crate::helpers::get_bytes)
-                                .apply(widget::text::body),
-                        ))
-                        .add(widget::settings::item(
-                            fl!("total-swap"),
-                            memory_info
-                                .swap_total_bytes
-                                .apply(crate::helpers::get_bytes)
-                                .apply(widget::text::body),
-                        ))
-                        .add_maybe(memory_info.dram_info.as_ref().map(|i| {
-                            widget::settings::item(
-                                fl!("dram-frequency"),
-                                format!("{} MHz", i.frequency_mhz).apply(widget::text::body),
-                            )
-                        }))
-                        .add_maybe(memory_info.dram_info.as_ref().map(|i| {
-                            widget::settings::item(
-                                fl!("dram-type"),
-                                i.memory_type.clone().apply(widget::text::body),
-                            )
-                        }))
-                        .apply(Element::from),
-                    widget::settings::section()
-                        .title(fl!("memory-stats"))
-                        .add(widget::settings::item(
-                            fl!("used-memory"),
-                            memory_info
-                                .used_memory_bytes
-                                .apply(crate::helpers::get_bytes)
-                                .apply(widget::text::body),
-                        ))
-                        .add(widget::settings::item(
-                            fl!("used-swap"),
-                            memory_info
-                                .swap_used_bytes
-                                .apply(crate::helpers::get_bytes)
-                                .apply(widget::text::body),
-                        ))
-                        .apply(Element::from),
-                ]))
+                .push(
+                    widget::settings::view_column(vec![
+                        widget::settings::section()
+                            .title(fl!("memory-info"))
+                            .add(widget::settings::item(
+                                fl!("total-memory"),
+                                memory_info
+                                    .total_memory_bytes
+                                    .apply(crate::helpers::get_bytes)
+                                    .apply(widget::text::body),
+                            ))
+                            .add(widget::settings::item(
+                                fl!("total-swap"),
+                                memory_info
+                                    .swap_total_bytes
+                                    .apply(crate::helpers::get_bytes)
+                                    .apply(widget::text::body),
+                            ))
+                            .add_maybe(memory_info.dram_info.as_ref().map(|i| {
+                                widget::settings::item(
+                                    fl!("dram-frequency"),
+                                    format!("{} MHz", i.frequency_mhz).apply(widget::text::body),
+                                )
+                            }))
+                            .add_maybe(memory_info.dram_info.as_ref().map(|i| {
+                                widget::settings::item(
+                                    fl!("dram-type"),
+                                    i.memory_type.clone().apply(widget::text::body),
+                                )
+                            }))
+                            .apply(Element::from),
+                        widget::settings::section()
+                            .title(fl!("memory-stats"))
+                            .add(widget::settings::item(
+                                fl!("used-memory"),
+                                memory_info
+                                    .used_memory_bytes
+                                    .apply(crate::helpers::get_bytes)
+                                    .apply(widget::text::body),
+                            ))
+                            .add(widget::settings::item(
+                                fl!("used-swap"),
+                                memory_info
+                                    .swap_used_bytes
+                                    .apply(crate::helpers::get_bytes)
+                                    .apply(widget::text::body),
+                            ))
+                            .apply(Element::from),
+                    ])
+                    .apply(widget::scrollable),
+                )
                 .apply(Element::from)
         } else {
             widget::horizontal_space().apply(Element::from)

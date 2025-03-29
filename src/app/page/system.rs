@@ -89,6 +89,7 @@ impl super::Page for SystemPage {
                     ))
                     .apply(Element::from),
             ])
+            .apply(widget::scrollable)
             .apply(Element::from)
         } else {
             widget::horizontal_space().apply(Element::from)

@@ -44,6 +44,9 @@ pub enum Message {
     SystemPage(page::system::SystemMessage),
     CpuPage(page::cpu::CpuMessage),
     MemoryPage(page::memory::MemoryMessage),
+    GpuPage(page::gpu::GpuMessage),
+    NetworkPage(page::network::NetworkMessage),
+    StoragePage(page::storage::StorageMessage),
     ProcessPage(page::processes::ProcessMessage),
 }
 
@@ -107,6 +110,21 @@ impl Application for AppModel {
             .text(fl!("memory"))
             .data(Box::new(page::memory::MemoryPage::new()) as Box<dyn page::Page>)
             .icon(icon::from_name("firmware-manager-symbolic"));
+        app.nav
+            .insert()
+            .text(fl!("gpu"))
+            .data(Box::new(page::gpu::GpuPage::new()) as Box<dyn page::Page>)
+            .icon(icon::from_name("firmware-manager-symbolic"));
+        app.nav
+            .insert()
+            .text(fl!("network"))
+            .data(Box::new(page::network::NetworkPage::new()) as Box<dyn page::Page>)
+            .icon(icon::from_name("network-wireless-symbolic"));
+        app.nav
+            .insert()
+            .text(fl!("storage"))
+            .data(Box::new(page::storage::StoragePage::new()) as Box<dyn page::Page>)
+            .icon(icon::from_name("media-floppy-symbolic"));
         app.nav
             .insert()
             .text(fl!("processes"))

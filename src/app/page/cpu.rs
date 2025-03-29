@@ -149,6 +149,7 @@ impl super::Page for CpuPage {
                                 .to_string()
                                 .apply(widget::text::body),
                         ))
+                        .apply(widget::scrollable)
                         .apply(Element::from),
                 ]))
                 .apply(Element::from)

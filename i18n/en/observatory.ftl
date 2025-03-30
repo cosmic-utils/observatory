@@ -9,9 +9,9 @@ not-supported = Not Supported
 
 # === Pages ===
 system = System
-cpu = CPU
+cpu = Processor
 memory = Memory
-gpu = GPUs
+gpu = Graphics
 network = Networks
 storage = Storage Devices
 processes = Processes

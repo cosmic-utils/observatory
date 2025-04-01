@@ -61,9 +61,14 @@ run *args:
 
 # Installs files
 install:
-    install -Dm0755 {{bin-src}} {{bin-dst}}
-    install -Dm0644 resources/app.desktop {{desktop-dst}}
-    install -Dm0644 resources/app.metainfo.xml {{appdata-dst}}
+    @just monitord/install
+    @just monitord/register-service
+    sudo systemctl daemon-reload
+    sudo systemctl enable monitord
+    sudo systemctl start monitord
+    sudo install -Dm0755 {{bin-src}} {{bin-dst}}
+    sudo install -Dm0644 resources/app.desktop {{desktop-dst}}
+    sudo install -Dm0644 resources/app.metainfo.xml {{appdata-dst}}
 
 # Uninstalls installed files
 uninstall:

@@ -4,15 +4,8 @@ A system monitor for the COSMIC™ desktop
 
 ## Installation
 
-A [justfile](./justfile) is included by default for the [casey/just][just] command runner.
-
-- `just` builds the application with the default `just build-release` recipe
-- `just run` builds and runs the application
-- `just install` installs the project into the system
-- `just vendor` creates a vendored tarball
-- `just build-vendored` compiles with vendored dependencies from that tarball
-- `just check` runs clippy on the project to check for linter warnings
-- `just check-json` can be used by IDEs that support LSP
+### From Source
+Clone this repository with `git clone https://github.com/cosmic-utils/observatory.git --recurse-submodules` and then run `just` and then finally `just install`
 
 ## Translators
 

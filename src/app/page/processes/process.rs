@@ -138,8 +138,8 @@ impl widget::table::ItemCategory for ProcessTableCategory {
     fn width(&self) -> cosmic::iced::Length {
         match self {
             Self::Name => Length::Fixed(320.0),
-            Self::Cpu => Length::Fixed(80.0),
-            Self::Gpu => Length::Fixed(80.0),
+            Self::Cpu => Length::Fixed(100.0),
+            Self::Gpu => Length::Fixed(100.0),
             Self::Mem => Length::Fixed(120.0),
             Self::Disk => Length::Fixed(150.0),
         }

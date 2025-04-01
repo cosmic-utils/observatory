@@ -8,7 +8,8 @@ use cosmic::{
     prelude::*,
     widget,
 };
-
+use monitord_protocols::monitord::ProcessSig::{Sigkill, Sigterm};
+use monitord_protocols::monitord::ProcessSigRequest;
 use crate::{
     app::{ContextPage, Message},
     config::Config,
@@ -48,7 +49,7 @@ impl ProcessPage {
 
 impl super::Page for ProcessPage {
     fn update(&mut self, msg: Message) -> Task<Message> {
-        let tasks = Vec::new();
+        let mut tasks = Vec::new();
         match msg {
             Message::UpdateConfig(config) => self.config = config,
             Message::ProcessPage(msg) => match msg {
@@ -88,11 +89,47 @@ impl super::Page for ProcessPage {
                         self.process_model.sort(category, false)
                     }
                 }
-                ProcessMessage::KillProcess(_pid) => {
-                    todo!()
+                ProcessMessage::KillProcess(pid) => {
+                    tasks.push(Task::future(async move {
+                        use monitord_protocols::protocols::MonitordServiceClient;
+                        let mut client = MonitordServiceClient::connect("http://127.0.0.1:50051")
+                            .await
+                            .unwrap();
+
+                        let request = tonic::Request::new(ProcessSigRequest {
+                            pid,
+                            sig: Sigkill.into()
+                        });
+
+                        let succeeded = client.term_process(request).await.unwrap().into_inner();
+
+                        if succeeded.succeeded {
+                            cosmic::Action::App(Message::NoOp)
+                        } else {
+                            cosmic::Action::App(Message::Error("Failed to kill process".to_owned()))
+                        }
+                    }));
                 }
-                ProcessMessage::TermProcess(_pid) => {
-                    todo!()
+                ProcessMessage::TermProcess(pid) => {
+                    tasks.push(Task::future(async move {
+                        use monitord_protocols::protocols::MonitordServiceClient;
+                        let mut client = MonitordServiceClient::connect("http://127.0.0.1:50051")
+                            .await
+                            .unwrap();
+
+                        let request = tonic::Request::new(ProcessSigRequest {
+                            pid,
+                            sig: Sigterm.into()
+                        });
+
+                        let succeeded = client.term_process(request).await.unwrap().into_inner();
+
+                        if succeeded.succeeded {
+                            cosmic::Action::App(Message::NoOp)
+                        } else {
+                            cosmic::Action::App(Message::Error("Failed to term process".to_owned()))
+                        }
+                    }));
                 }
             },
             Message::ToggleContextPage(ContextPage::PageAbout) => {

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Observatory
+Comment=A system monitor for the COSMIC™ desktop
+Type=Application
+Icon=utilities-system-monitor
+Exec=observatory %F
+Terminal=false
+StartupNotify=true
+Categories=COSMIC
+Keywords=COSMIC
+MimeType=

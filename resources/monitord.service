@@ -1,0 +1,8 @@
+[Unit]
+Description=System monitoring daemon for COSMIC Observatory
+
+[Service]
+ExecStart=/usr/bin/monitord
+
+[Install]
+WantedBy=multi-user.target

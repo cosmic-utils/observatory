@@ -1,20 +1,25 @@
 name := 'observatory'
-dae-name := 'observatory-daemon'
-appid := 'io.github.cosmic_utils.observatory'
+appid := 'io.github.CosmicUtils.Observatory'
+
 rootdir := ''
 prefix := '/usr'
+
 base-dir := absolute_path(clean(rootdir / prefix))
-share-dir := base-dir / 'share'
+
 bin-src := 'target' / 'release' / name
 bin-dst := base-dir / 'bin' / name
-dae-src := 'target' / 'release' / dae-name
-dae-dst := base-dir / 'bin' / dae-name
+
 desktop := appid + '.desktop'
-desktop-src := 'observatory' / 'res' / desktop
-desktop-dst := share-dir / 'applications' / desktop
-metainfo-dst := share-dir / 'metainfo' / appid + '.xml'
-icons-src := 'observatory' / 'res' / 'icons' / 'hicolor'
-icons-dst := share-dir / 'icons' / 'hicolor'
+desktop-src := 'resources' / desktop
+desktop-dst := clean(rootdir / prefix) / 'share' / 'applications' / desktop
+
+appdata := appid + '.metainfo.xml'
+appdata-src := 'resources' / appdata
+appdata-dst := clean(rootdir / prefix) / 'share' / 'appdata' / appdata
+
+icons-src := 'resources' / 'icons' / 'hicolor'
+icons-dst := clean(rootdir / prefix) / 'share' / 'icons' / 'hicolor'
+
 icon-svg-src := icons-src / 'scalable' / 'apps' / 'icon.svg'
 icon-svg-dst := icons-dst / 'scalable' / 'apps' / appid + '.svg'
 
@@ -34,8 +39,8 @@ clean-dist: clean clean-vendor
 
 # Compiles with debug profile
 build-debug *args:
-    cargo build {{ args }}
-    cargo build --manifest-path ./observatory-daemon/Cargo.toml {{ args }}
+    cargo build --manifest-path ./monitord/Cargo.toml {{args}}
+    cargo build {{args}}
 
 # Compiles with release profile
 build-release *args: (build-debug '--release' args)
@@ -45,26 +50,29 @@ build-vendored *args: vendor-extract (build-release '--frozen --offline' args)
 
 # Runs a clippy check
 check *args:
-    cargo clippy --all-features {{ args }} -- -W clippy::pedantic
+    cargo clippy --all-features {{args}} -- -W clippy::pedantic
 
 # Runs a clippy check with JSON message format
 check-json: (check '--message-format=json')
 
 # Run the application for testing purposes
 run *args:
-    env RUST_LOG=observatory=debug RUST_BACKTRACE=full cargo run --release -p observatory {{ args }}
+    env RUST_BACKTRACE=full cargo run --release {{args}}
 
 # Installs files
 install:
-    install -Dm0755 {{ bin-src }} {{ bin-dst }}
-    install -Dm0755 {{ dae-src }} {{ dae-dst }}
-    install -Dm0644 observatory/res/app.desktop {{ desktop-dst }}
-    install -Dm0644 {{ icon-svg-src }} {{ icon-svg-dst }}
-    install -Dm0644 observatory/res/metainfo.xml {{ metainfo-dst }}
+    @just monitord/install
+    @just monitord/register-service
+    sudo systemctl daemon-reload
+    sudo systemctl enable monitord
+    sudo systemctl start monitord
+    sudo install -Dm0755 {{bin-src}} {{bin-dst}}
+    sudo install -Dm0644 resources/app.desktop {{desktop-dst}}
+    sudo install -Dm0644 resources/app.metainfo.xml {{appdata-dst}}
 
 # Uninstalls installed files
 uninstall:
-    rm {{ bin-dst }} {{ desktop-dst }} {{ icon-svg-dst }} {{ metainfo-dst }}
+    rm {{bin-dst}} {{desktop-dst}} {{appdata-dst}}
 
 # Vendor dependencies locally
 vendor:
